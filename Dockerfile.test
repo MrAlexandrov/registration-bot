@@ -1,0 +1,21 @@
+# Используем базовый образ Python
+FROM python:3.10-slim
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы с зависимостями
+COPY requirements.txt .
+COPY tests/ ./tests
+COPY src/ ./src
+COPY scenario.json ./
+COPY .env ./
+
+# Устанавливаем зависимости
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Устанавливаем зависимости для тестов
+RUN pip install pytest pytest-asyncio pytest-mock
+
+# Запускаем pytest для тестирования
+CMD ["pytest", "tests"]

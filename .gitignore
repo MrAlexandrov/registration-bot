@@ -1,1 +1,4 @@
+.pyteset_cache
 .venv
+.env
+__pycache__

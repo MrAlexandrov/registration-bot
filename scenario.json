@@ -1,0 +1,36 @@
+{
+  "states": {
+    "start": {
+      "message": "Привет! Я бот для регистрации на Пионерский выезд 2024. Давай знакомиться, тебя зовут {first_name}?",
+      "next_state": {
+        "Да": "waiting_for_surname",
+        "Нет, исправить": "fix_name"
+      },
+      "buttons": ["Да", "Нет, исправить"]
+    },
+    "waiting_for_surname": {
+      "message": "А фамилия у тебя {last_name}?",
+      "next_state": {
+        "Да": "waiting_for_group",
+        "Нет, исправить": "fix_surname"
+      },
+      "buttons": ["Да", "Нет, исправить"]
+    },
+    "fix_name": {
+      "message": "Давай введем имя заново.",
+      "next_state": "waiting_for_surname"
+    },
+    "fix_surname": {
+      "message": "Давай введем фамилию заново.",
+      "next_state": "waiting_for_group"
+    },
+    "waiting_for_group": {
+      "message": "Теперь напиши, в какой группе ты учишься (например, СМ7-525).",
+      "next_state": "registered"
+    },
+    "registered": {
+      "message": "Отлично, я тебя записал. Вот кнопки с информацией.",
+      "buttons": ["О выезде", "Что взять с собой", "Исправить свои данные"]
+    }
+  }
+}
