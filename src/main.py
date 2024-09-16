@@ -3,116 +3,143 @@ from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from settings import BOT_TOKEN
 from bot_logging import logger
-from storage import FileStorage
 from state_manager import get_user_state, set_user_state, load_scenario
-
-# Хранилище пользователей
-users = {}
-
-# Создаем экземпляр класса для хранения данных в файле
-storage = FileStorage()
+from storage import FileStorage
 
 # Загрузка сценария
 scenario = load_scenario()
 
+# Хранилище пользователей
+users = {}
+storage = FileStorage()
+
 # Универсальная функция для замены плейсхолдеров в сообщении
 def replace_placeholders(message, placeholders):
-    """Заменяет плейсхолдеры в сообщении на значения из переданного словаря."""
     for placeholder, value in placeholders.items():
         message = message.replace(f"{{{placeholder}}}", str(value))
     return message
 
-# Функция для отправки сообщений с клавиатурой или без
-async def send_message(update: Update, message: str, buttons: list = None):
-    """Отправляет сообщение пользователю. Если указаны кнопки, добавляет их."""
+# Функция для отправки сообщений
+async def send_message(update, message, buttons=None):
     if buttons:
         keyboard = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
         await update.message.reply_text(message, reply_markup=keyboard)
     else:
         await update.message.reply_text(message, reply_markup=ReplyKeyboardRemove())
 
-# Универсальная функция для обработки переходов на основе кнопок
-def handle_button_response(user_input: str, next_state_dict: dict):
-    """Обрабатывает пользовательский ввод и возвращает соответствующее состояние на основе кнопок."""
-    for button, state in next_state_dict.items():
-        if user_input.lower() == button.lower():
-            return state
-    return 'invalid_input'
+# Обработка сервисных состояний
+async def handle_service_state(state, user_id):
+    if state == "check_double_registration":
+        # Проверка, зарегистрирован ли пользователь
+        if user_id in [user[0] for user in storage.get_all_users()]:
+            return "message_already_registered"
+        else:
+            return "message_fill_first_name_first_time"
+    elif state.startswith("save"):
+        # Пример: сохранение данных
+        if state == "save_first_name":
+            # Логика сохранения имени
+            storage.save_user(user_id, users[user_id])
+        elif state == "save_last_name":
+            # Логика сохранения фамилии
+            storage.save_user(user_id, users[user_id])
+        elif state == "save_group":
+            # Логика сохранения группы
+            storage.save_user(user_id, users[user_id])
 
-# Обработчик команды /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Возвращаем следующее состояние
+    return scenario[state]["next_state"]
+
+# Обработка кнопок
+def handle_button_response(update, next_state_dict):
+    user_input = update.message.text
+    logger.info(f"Обработка кнопочного ввода: {user_input}")
+
+    # Найти соответствующее состояние на основе введённого текста
+    if user_input in next_state_dict:
+        return next_state_dict[user_input]
+    else:
+        return "invalid_input"
+
+# Обработка ввода
+async def handle_input_state(update, state):
+    user_input = update.message.text
     user_id = update.message.from_user.id
 
-    # Сохраняем данные пользователя (имя и фамилию)
-    users[user_id] = {
-        'first_name': update.message.from_user.first_name,
-        'last_name': update.message.from_user.last_name,
-        'group': None
-    }
+    if state == "fill_first_name_first_time":
+        users[user_id]['first_name'] = user_input
+    elif state == "fill_last_name_first_time":
+        users[user_id]['last_name'] = user_input
+    elif state == "fill_group_first_time":
+        users[user_id]['group'] = user_input
+    # ... другие состояния ввода
+    return scenario[state]["next_state"]
 
-    # Устанавливаем начальное состояние
-    set_user_state(user_id, "start")
-    state = get_user_state(user_id)
-
-    # Заменяем плейсхолдеры в сообщении
-    message = replace_placeholders(scenario['states'][state]['message'], users[user_id])
-
-    # Получаем кнопки из сценария
-    buttons = scenario['states'][state].get('buttons')
-
-    # Отправляем сообщение с кнопками, если они есть
-    await send_message(update, message, buttons)
-
-# Обработка состояний
-async def process_state(update: Update, user_data: dict, state: str):
-    user_id = update.message.from_user.id
-    state_data = scenario['states'][state]
-    next_state = state_data.get('next_state')
-
-    # Если есть кнопки для выбора, обрабатываем их
-    if isinstance(next_state, dict):
-        next_state = handle_button_response(update.message.text, next_state)
-        if next_state == 'invalid_input':
-            await update.message.reply_text("Пожалуйста, выберите вариант с помощью кнопок.")
-            return state  # Остаёмся в текущем состоянии
-
-    # Если нужно сохранить данные пользователя
-    if state == "waiting_for_name":
-        user_data['first_name'] = update.message.text
-    elif state == "waiting_for_surname":
-        user_data['last_name'] = update.message.text
-    elif state == "waiting_for_group":
-        user_data['group'] = update.message.text
-
-    return next_state
-
-# Универсальный обработчик для работы с состояниями
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# Универсальный обработчик состояний
+async def handle_state(update, context):
     user_id = update.message.from_user.id
     state = get_user_state(user_id)
-    user_data = users.get(user_id, {})
 
-    # Обработка текущего состояния и получение следующего состояния
-    next_state = await process_state(update, user_data, state)
+    # Проверка на существование состояния в сценарии
+    if state not in scenario:
+        logger.error(f"Состояние '{state}' не найдено в сценарии")
+        await update.message.reply_text(f"Ошибка: состояние '{state}' не найдено в сценарии.")
+        return
+
+    logger.info(f"Текущее состояние: {state}, Тип состояния: {scenario[state]['type']}")
+    state_data = scenario[state]
+    state_type = state_data["type"]
+
+    if state_type == "message":
+        # Обработка вывода сообщения
+        message = replace_placeholders(state_data["message"], users.get(user_id, {}))
+        buttons = state_data.get("buttons")
+        await send_message(update, message, buttons)
+        next_state = state_data["next_state"]
+
+    elif state_type == "service":
+        # Обработка сервисного состояния
+        next_state = await handle_service_state(state, user_id)
+
+    elif state_type == "button":
+        # Обработка выбора кнопок
+        buttons = list(state_data["next_state"].keys())
+        await send_message(update, state_data.get("message", "Пожалуйста, используйте кнопки."), buttons)
+
+        next_state = handle_button_response(update, state_data["next_state"])
+        if next_state == "invalid_input":
+            await update.message.reply_text("Пожалуйста, используйте кнопки.")
+            return  # Остаёмся в текущем состоянии
+
+    elif state_type == "input":
+        # Обработка текстового ввода пользователя
+        next_state = await handle_input_state(update, state)
 
     # Обновляем состояние пользователя
     set_user_state(user_id, next_state)
 
-    # Заменяем плейсхолдеры на данные пользователя
-    message = replace_placeholders(scenario['states'][next_state]['message'], user_data)
+    # Переходим к следующему состоянию
+    if next_state in scenario:
+        await handle_state(update, context)
 
-    # Получаем кнопки из сценария
-    buttons = scenario['states'][next_state].get('buttons')
-
-    # Отправляем сообщение следующего состояния
-    await send_message(update, message, buttons)
-
+# Обработчик команды /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+    users[user_id] = {
+        'first_name': update.message.from_user.first_name,
+        'last_name': update.message.from_user.last_name,
+        'group': None,
+        'username': update.message.from_user.username
+    }
+    # Начинаем процесс
+    set_user_state(user_id, "start")
+    await handle_state(update, context)
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_state))
 
     logger.info("Запуск бота...")
     app.run_polling()
