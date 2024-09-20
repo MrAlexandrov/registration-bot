@@ -9,7 +9,7 @@ BOT_TOKEN = getenv('BOT_TOKEN')
 SPREADSHEET_ID = getenv('SPREADSHEET_ID')
 GOOGLE_CREDENTIALS_FILE = getenv('GOOGLE_CREDENTIALS_FILE')
 
-FIELDNAMES = ["user_id", "first_name", "last_name", "group", "username"]
+FIELDNAMES = ["user_id", "first_name", "last_name", "patronymic", "group", "username"]
 # USER_ID='user_id'
 # FIRST_NAME='first_name'
 # LAST_NAME='last_name'

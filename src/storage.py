@@ -118,7 +118,8 @@ class CombinedStorage(UserStorage):
         google_users = self.google_storage.get_all_users()
         
         # Здесь можно выбрать, как поступить с данными из двух источников (например, объединить, проверить дубликаты и т.п.)
-        return {
-            "csv_users": csv_users,
-            "google_users": google_users
-        }
+        # return {
+        #     "csv_users": csv_users,
+        #     "google_users": google_users
+        # }
+        return google_users

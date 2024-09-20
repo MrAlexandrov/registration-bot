@@ -1,8 +1,9 @@
 class User:
-    def __init__(self, user_id, first_name, last_name, group, username):
+    def __init__(self, user_id, first_name, last_name, patronymic, group, username):
         self.user_id = user_id
         self.first_name = first_name
         self.last_name = last_name
+        self.patronymic = patronymic
         self.group = group
         self.username = username
 
@@ -11,6 +12,7 @@ class User:
             "user_id": self.user_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
+            "patronymic": self.patronymic,
             "group": self.group,
             "username": self.username
         }
@@ -21,6 +23,7 @@ class User:
             user_id=data.get("user_id"),
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
+            patronymic=data.get("patronymic"),
             group=data.get("group"),
             username=data.get("username")
         )
