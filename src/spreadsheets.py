@@ -2,6 +2,7 @@ from pprint import pprint
 import httplib2
 import googleapiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
+import re
 
 class SpreadsheetError(Exception):
     """Базовое исключение для работы с Google Sheets"""
@@ -58,11 +59,13 @@ class GoogleSpreadsheetClient:
         if self.debug_mode:
             pprint(spreadsheet)
         self.spreadsheet_id = spreadsheet['spreadsheetId']
-        
-        # Изначально не устанавливаем лист — пользователь может выбрать любой
-        self.sheet_id = None
-        self.sheet_title = None
-
+        if spreadsheet.get('sheets'):
+            self.sheet_id = spreadsheet['sheets'][0]['properties']['sheetId']
+            self.sheet_title = spreadsheet['sheets'][0]['properties']['title']
+        else:
+            self.sheet_id = None
+            self.sheet_title = None
+            
     def list_sheets(self):
         """Возвращает список всех листов в таблице"""
         if not self.spreadsheet_id:
@@ -73,7 +76,7 @@ class GoogleSpreadsheetClient:
                 "sheetId":  sheet['properties']['sheetId'], 
                 "title":    sheet['properties']['title']
             }
-            for sheet in spreadsheet['sheets']
+            for sheet in spreadsheet.get('sheets', [])
         ]
 
     def set_sheet_by_title(self, sheet_title):
@@ -100,7 +103,7 @@ class GoogleSpreadsheetClient:
         """Готовит значения для вставки в таблицу"""
         if not self.sheet_title:
             raise SheetNotSetError("Лист не установлен")
-        cells_range = make_range_by_array(start_cell, values)
+        cells_range = self.make_range_by_array(start_cell, values)
         self.value_ranges.append({
             "range": f"{self.sheet_title}!{cells_range}",
             "majorDimension": major_dimension,
@@ -112,11 +115,13 @@ class GoogleSpreadsheetClient:
         if not self.sheet_title:
             raise SheetNotSetError("Лист не установлен")
         table_range = f"{self.sheet_title}!{output_range}"
-        return self.sheet_service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range=table_range).execute().get('values', [])
+        return self.sheet_service.spreadsheets().values().get(
+            spreadsheetId=self.spreadsheet_id, range=table_range
+        ).execute().get('values', [])
 
     def get_values(self, rows, cols):
         """Возвращает значения по координатам"""
-        return self.get_values_by_range(make_range_from_beginning(rows, cols))
+        return self.get_values_by_range(self.make_range_from_beginning(rows, cols))
 
     def execute_batch_update(self, value_input_option="USER_ENTERED"):
         """Запускает пакетный запрос к Google Sheets"""
@@ -146,20 +151,50 @@ class GoogleSpreadsheetClient:
 
         return update_responses
 
-def make_range(start_cell, rows, cols):
-    """Создает диапазон ячеек"""
-    col_letter, row_number = start_cell[0], start_cell[1:]
+    def make_range(self, start_cell, rows, cols):
+        """Создает диапазон ячеек"""
+        col_str, start_row = self.parse_cell(start_cell)
+        start_col_num = self.column_letter_to_number(col_str)
+        end_col_num = start_col_num + cols - 1
+        end_row = start_row + rows - 1
 
-    assert len(col_letter) == 1 and col_letter.isalpha() and 'A' <= col_letter <= 'Z', "Неверная буква колонки"
-    assert 1 <= int(row_number) <= 1000, "Номер строки должен быть в диапазоне [1, 1000]"
-    assert ord(col_letter) + cols - 1 <= ord('Z'), "Неверный диапазон по колонкам"
+        start_col_letter = self.number_to_column_letter(start_col_num)
+        end_col_letter = self.number_to_column_letter(end_col_num)
 
-    return f"{start_cell}:{chr(ord(col_letter) + cols - 1)}{int(row_number) + rows - 1}"
+        return f"{start_col_letter}{start_row}:{end_col_letter}{end_row}"
 
-def make_range_by_array(start_cell, values):
-    """Создает диапазон на основе массива значений"""
-    return make_range(start_cell, len(values), len(values[0]))
+    def make_range_by_array(self, start_cell, values):
+        """Создает диапазон на основе массива значений"""
+        num_rows = len(values)
+        num_cols = len(values[0]) if values else 0
+        return self.make_range(start_cell, num_rows, num_cols)
 
-def make_range_from_beginning(rows, cols):
-    """Создает диапазон с начала таблицы"""
-    return make_range('A1', rows, cols)
+    def make_range_from_beginning(self, rows, cols):
+        """Создает диапазон с начала таблицы"""
+        return self.make_range('A1', rows, cols)
+
+    def parse_cell(self, cell):
+        """Парсит адрес ячейки в буквы колонки и номер строки"""
+        match = re.match(r'^([A-Za-z]+)(\d+)$', cell)
+        if not match:
+            raise ValueError(f"Некорректный адрес ячейки: {cell}")
+        col_str, row_str = match.groups()
+        return col_str.upper(), int(row_str)
+
+    def column_letter_to_number(self, col_str):
+        """Преобразует буквы колонки в номер"""
+        num = 0
+        for c in col_str:
+            if 'A' <= c <= 'Z':
+                num = num * 26 + (ord(c) - ord('A') + 1)
+            else:
+                raise ValueError(f"Некорректная буква колонки: {col_str}")
+        return num
+
+    def number_to_column_letter(self, n):
+        """Преобразует номер колонки в буквы"""
+        col_str = ''
+        while n > 0:
+            n, remainder = divmod(n - 1, 26)
+            col_str = chr(65 + remainder) + col_str
+        return col_str

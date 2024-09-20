@@ -1,17 +1,19 @@
 import json
+from pprint import pprint
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from settings import BOT_TOKEN
+from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
 from bot_logging import logger
 from state_manager import get_user_state, set_user_state, load_scenario
-from storage import FileStorage
+from storage import UserStorage
+from user import User
 
 # Загрузка сценария
 scenario = load_scenario()
 
 # Хранилище пользователей
 users = {}
-storage = FileStorage()
+storage = UserStorage()
 
 # Универсальная функция для замены плейсхолдеров в сообщении
 def replace_placeholders(message, placeholders):
@@ -135,11 +137,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     set_user_state(user_id, "start")
     await handle_state(update, context)
 
+
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    test = User(123, "first_name", "second_name", "group", "username")
+    google_storage = GoogleSheetsStorage(credentials_file=GOOGLE_CREDENTIALS_FILE, spreadsheet_id=SPREADSHEET_ID)
+    csv_storage = CSVFileStorage()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_state))
+    google_storage.save_user(test)
+    csv_storage.save_user(test)
+    google_storage.save_user(test)
+    csv_storage.save_user(test)
+    pprint(google_storage.get_all_users())
+    pprint(csv_storage.get_all_users())
+    # app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    logger.info("Запуск бота...")
-    app.run_polling()
+    # app.add_handler(CommandHandler("start", start))
+    # app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_state))
+
+    # logger.info("Запуск бота...")
+    # app.run_polling()
