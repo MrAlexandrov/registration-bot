@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
 from bot_logging import logger
 from state_manager import get_user_state, set_user_state, load_scenario
-from storage import UserStorage
+from storage import CSVFileStorage, GoogleSheetsStorage, UserStorage
 from user import User
 
 # Загрузка сценария
