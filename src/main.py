@@ -1,5 +1,6 @@
 # import json
-# from pprint import pprint
+from datetime import datetime
+from pprint import pprint
 from typing import Dict
 from telegram import (
     ReplyKeyboardMarkup, 
@@ -20,18 +21,31 @@ from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNA
 # from bot_logging import logger
 # from state_manager import get_user_state, set_user_state, load_scenario
 from storage import CSVFileStorage, GoogleSheetsStorage, UserStorage, CombinedStorage
-# from user import User
+from user import User
 
-WRITING_FIRST_NAME = "Заполнение имени"
-WRITING_LAST_NAME = "Заполнение фамилии"
-WRITING_PATRONYMIC = "Заполнение отчства"
-WRITING_GROUP = "Заполнение группы"
-WRITING_PHONE_NUMBER = "Заполнение номера телефона"
-WRITING_EXPECTATIONS = "Заполнение ожиданий"
-WRITING_FOOD_WISHES = "Заполнение особенностей питания"
-FINISHED = "Регистрация закончена"
+storage = CombinedStorage(
+    csv_file_name="users.csv",
+    credentials_file=GOOGLE_CREDENTIALS_FILE,
+    spreadsheet_id=SPREADSHEET_ID,
+    fieldnames=FIELDNAMES,
+    debug_mode=False
+)
 
-ABOUT_TREAP = "O выезде"
+# WRITING_FIRST_NAME = "Заполнение имени"
+# WRITING_LAST_NAME = "Заполнение фамилии"
+# WRITING_PATRONYMIC = "Заполнение отчства"
+# WRITING_GROUP = "Заполнение группы"
+# WRITING_PHONE_NUMBER = "Заполнение номера телефона"
+# WRITING_EXPECTATIONS = "Заполнение ожиданий"
+# WRITING_FOOD_WISHES = "Заполнение особенностей питания"
+# FINISHED = "Регистрация закончена"
+
+(WRITING_FIRST_NAME, WRITING_LAST_NAME, WRITING_PATRONYMIC, WRITING_GROUP,
+ WRITING_PHONE_NUMBER, WRITING_EXPECTATIONS, WRITING_FOOD_WISHES,
+ FINISHED, CHANGE_DATA_OPTION) = range(9)
+
+
+ABOUT_TRIP = "O выезде"
 WHAT_TO_TAKE = "Что взять?"
 CHANGE_DATA = "Изменить данные"
 
@@ -44,111 +58,215 @@ CALLBACK_WRITING_EXPECTATIONS = WRITING_FOOD_WISHES
 CALLBACK_WRITING_FOOD_WISHES = FINISHED
 CALLBACK_FINISHED = FINISHED
 
-ABOUT_TREAP_CALLBACK = FINISHED
+ABOUT_TRIP_CALLBACK = FINISHED
 WHAT_TO_TAKE_CALLBACK = FINISHED
 CHANGE_DATA_CALLBACK = FINISHED
 
+
+ABOUT_TRIP = "O выезде"
+WHAT_TO_TAKE = "Что взять?"
+CHANGE_DATA = "Изменить данные"
+
+reply_keyboard = [
+    [ABOUT_TRIP, WHAT_TO_TAKE],
+    [CHANGE_DATA]
+]
+markup_reply_keyboard = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+
+def save_user_data(context):
+    user = User(
+        timestamp=context.user_data.get("timestamp", str(datetime.now())),
+        user_id=context.user_data.get("user_id"),
+        username=context.user_data.get("username"),
+        first_name=context.user_data.get("first_name", ""),
+        last_name=context.user_data.get("last_name", ""),
+        patronymic=context.user_data.get("patronymic", ""),
+        group=context.user_data.get("group", ""),
+        phone_number=context.user_data.get("phone_number", ""),
+        expectations=context.user_data.get("expectations", ""),
+        food_wishes=context.user_data.get("food_wishes", "")
+    )
+    storage.save_user(user)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    context.user_data["user_id"] = user_id
+    context.user_data["username"] = update.effective_user.username or None
+
     reply_text = "Привет! Я бот для регистрации на Пионерский выезд 2024!"
-    if context.user_data:
-        reply_text += (
-            f" Мы уже знакомы, я кое-что о тебе знаю: {', '.join(context.user_data.keys())}. Давай продолжим общение."
+    await update.message.reply_text(reply_text)
+    if context.user_data.get("registered"):
+        reply_text = (
+            f"Мы уже знакомы, {context.user_data.get('first_name')}! Чем могу помочь?"
         )
-        await update.message.reply_text(reply_text)
-        return context.user_data["current_state"]
+        await update.message.reply_text(reply_text, reply_markup=markup_reply_keyboard)
+        return FINISHED
     else:
-        reply_text += (
-            " Давай знакомиться))))))))\nНапиши, пожалуйста, своё имя:"
-        )
+        context.user_data["timestamp"] = str(datetime.now())
+        reply_text = "Давай знакомиться! Напиши, пожалуйста, своё имя:"
         await update.message.reply_text(reply_text)
-        context.user_data["current_state"] = WRITING_FIRST_NAME
-        return context.user_data["current_state"]
+        return WRITING_FIRST_NAME
 
 async def writing_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["first_name"] = text
-    await update.message.reply_text(f"Отлично, {text}, а теперь введи свою фамилию:")
-    return CALLBACK_WRITING_FIRST_NAME
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Имя обновлено.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text(f"Отлично, {text}! А теперь введи свою фамилию:")
+        return WRITING_LAST_NAME
 
 async def writing_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["last_name"] = text
-    await update.message.reply_text("А теперь введи своё отчество:")
-    return CALLBACK_WRITING_LAST_NAME
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Фамилия обновлена.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text("А теперь введи своё отчество:")
+        return WRITING_PATRONYMIC
 
 async def writing_patronymic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["patronymic"] = text
-    await update.message.reply_text("А теперь введи свою группу:")
-    return CALLBACK_WRITING_PATRONYMIC
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Отчество обновлено.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text("А теперь введи свою группу:")
+        return WRITING_GROUP
 
-ask_phone_number = KeyboardButton(text="Поделиться номером из telegram", request_contact=True)
+ask_phone_number = KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)
 markup_ask_phone_number = ReplyKeyboardMarkup([[ ask_phone_number ]], one_time_keyboard=True)
 
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["group"] = text
-    await update.message.reply_text("Осталось совсем немного, теперь мне нужен твой номер телефона", reply_markup=markup_ask_phone_number)
-    return CALLBACK_WRITING_GROUP
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Группа обновлена.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text(
+            "Осталось совсем немного, теперь мне нужен твой номер телефона", 
+            reply_markup=markup_ask_phone_number
+        )
+        return WRITING_PHONE_NUMBER
 
 async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    context.user_data["phone_number"] = text
-    await update.message.reply_text("Что ты ожидаешь от выезда?")
-    return CALLBACK_WRITING_PHONE_NUMBER
+    if update.message.contact is not None:
+        # Пользователь поделился контактом
+        phone_number = update.message.contact.phone_number
+    else:
+        # Пользователь ввёл номер вручную
+        phone_number = update.message.text
+    context.user_data["phone_number"] = phone_number
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Номер телефона обновлён.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text("Что ты ожидаешь от выезда?", reply_markup=ReplyKeyboardRemove())
+        return WRITING_EXPECTATIONS
 
-answer_no = [["Нет"]]
-markup_answer_no = ReplyKeyboardMarkup(answer_no, one_time_keyboard=True)
+answer_no = ["Нет"]
+markup_answer_no = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
 
 async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["expectations"] = text
-    await update.message.reply_text("Есть ли у тебя алергия на еду?", markup_answer_no)
-    return CALLBACK_WRITING_EXPECTATIONS
+    if context.user_data.get("registered"):
+        save_user_data(context)
+        await update.message.reply_text("Ожидания обновлены.")
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text("Есть ли у тебя аллергия на еду?", reply_markup=markup_answer_no)
+        return WRITING_FOOD_WISHES
 
 async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     context.user_data["food_wishes"] = text
-    await update.message.reply_text("Поздравляю! Теперь ты зарегистрирован(а) на Пионерский выезд!")
-    return CALLBACK_WRITING_FOOD_WISHES
+    context.user_data["registered"] = True
+    save_user_data(context)
+    await update.message.reply_text(
+        "Поздравляю! Теперь ты зарегистрирован(а) на Пионерский выезд!",
+        reply_markup=markup_reply_keyboard
+    )
+    return FINISHED
 
-ABOUT_TREAP = "O выезде"
-WHAT_TO_TAKE = "Что взять?"
-CHANGE_DATA = "Изменить данные"
-
-reply_keyboard = [
-    [ABOUT_TREAP, WHAT_TO_TAKE],
-    [CHANGE_DATA]
-]
-markup_reply_keyboard = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-
-async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Таакс... Мы уже знакомы, вот, что могу предложить", reply_markup=markup_reply_keyboard)
-    return CALLBACK_FINISHED
-
-async def about_treap(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def about_trip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Пионерский выезд - один из лучших выездов что проходят с сентября по конец августа и с начала мая по конец мая!)")
-    return ABOUT_TREAP_CALLBACK
+    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+    return FINISHED
 
 async def what_to_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Трусы и куртку!")
-    return WHAT_TO_TAKE_CALLBACK
+    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+    return FINISHED
 
 change_data_keyboard = [
-    ["Изменить имя", "Изменить фамилию"],
-    ["Изменить отчество", "Изменить группу"],
-    ["Изменить номер телефона", "Изменить ожидания"],
-    ["Изменить особенности питания"]
+    ["Имя", "Фамилию"],
+    ["Отчество", "Группy"],
+    ["Номер телефона", "Ожидания"],
+    ["Особенности питания", "Назад"]
 ]
 markup_change_data = ReplyKeyboardMarkup(change_data_keyboard, one_time_keyboard=True)
 
 async def change_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Что хочешь поменять? (пока не работает)", reply_markup=markup_change_data)
-    return CALLBACK_FINISHED
+    await update.message.reply_text("Что ты хочешь изменить?", reply_markup=markup_change_data)
+    return CHANGE_DATA_OPTION
 
-async def fill_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Допустим, записал, но пока нет, ещё перекину типо ты зарегался")
-    return CALLBACK_FINISHED
+async def change_data_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    choice = update.message.text
+    if choice == "Имя":
+        await update.message.reply_text("Введите новое имя:")
+        return WRITING_FIRST_NAME
+    elif choice == "Фамилию":
+        await update.message.reply_text("Введите новую фамилию:")
+        return WRITING_LAST_NAME
+    elif choice == "Отчество":
+        await update.message.reply_text("Введите новое отчество:")
+        return WRITING_PATRONYMIC
+    elif choice == "Группy":
+        await update.message.reply_text("Введите новую группу:")
+        return WRITING_GROUP
+    elif choice == "Номер телефона":
+        await update.message.reply_text("Введите новый номер телефона:", reply_markup=markup_ask_phone_number)
+        return WRITING_PHONE_NUMBER
+    elif choice == "Ожидания":
+        await update.message.reply_text("Введите новые ожидания:")
+        return WRITING_EXPECTATIONS
+    elif choice == "Особенности питания":
+        await update.message.reply_text("Введите новые особенности питания:")
+        return WRITING_FOOD_WISHES
+    elif choice == "Назад":
+        await update.message.reply_text("Возвращаемся назад.", reply_markup=markup_reply_keyboard)
+        return FINISHED
+    else:
+        await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=markup_change_data)
+        return CHANGE_DATA_OPTION
+
+async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == ABOUT_TRIP:
+        return await about_trip(update, context)
+    elif text == WHAT_TO_TAKE:
+        return await what_to_take(update, context)
+    elif text == CHANGE_DATA:
+        return await change_data(update, context)
+    else:
+        await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=markup_reply_keyboard)
+        return FINISHED
 
 def facts_to_str(user_data: Dict[str, str]) -> str:
     """Helper function for formatting the gathered user info."""
@@ -158,11 +276,12 @@ def facts_to_str(user_data: Dict[str, str]) -> str:
 async def show_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display the gathered info."""
     await update.message.reply_text(
-        f"This is what you already told me: {facts_to_str(context.user_data)}"
+        f"Вот, что я о тебе знаю: {facts_to_str(context.user_data)}"
     )
 
-async def done(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    return FINISHED
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
+    return ConversationHandler.END
 
 
 def main() -> None:
@@ -174,45 +293,26 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            WRITING_FIRST_NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_first_name)
-            ],
-            WRITING_LAST_NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_last_name)
-            ],
-            WRITING_PATRONYMIC: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_patronymic)
-            ],
-            WRITING_GROUP: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_group)
-            ],
+            WRITING_FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_first_name)],
+            WRITING_LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_last_name)],
+            WRITING_PATRONYMIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_patronymic)],
+            WRITING_GROUP: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_group)],
             WRITING_PHONE_NUMBER: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_phone_number)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_phone_number),
+                MessageHandler(filters.CONTACT, writing_phone_number)
             ],
-            WRITING_EXPECTATIONS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_expectations)
-            ],
-            WRITING_FOOD_WISHES: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, writing_food_wishes)
-            ],
-            FINISHED: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, finished)
-            ],
-            ABOUT_TREAP: [
-                MessageHandler(filters.Regex(f"^{ABOUT_TREAP}$"), about_treap)
-            ],
-            WHAT_TO_TAKE: [
-                MessageHandler(filters.Regex(f"^{WHAT_TO_TAKE}$"), what_to_take)
-            ],
-            CHANGE_DATA: [
-                MessageHandler(filters.Regex(f"^{CHANGE_DATA}$"), change_data)
-            ]
+            WRITING_EXPECTATIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_expectations)],
+            WRITING_FOOD_WISHES: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_food_wishes)],
+            FINISHED: [MessageHandler(filters.TEXT & ~filters.COMMAND, finished)],
+            # ABOUT_TRIP: [MessageHandler(filters.Regex(f"^{ABOUT_TRIP}$"), about_trip)],
+            # WHAT_TO_TAKE: [MessageHandler(filters.Regex(f"^{WHAT_TO_TAKE}$"), what_to_take)],
+            # CHANGE_DATA: [MessageHandler(filters.Regex(f"^{CHANGE_DATA}$"), change_data)],
+            CHANGE_DATA_OPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, change_data_option)],
         },
-        fallbacks=[MessageHandler(filters.Regex("^Done$"), done)],
+        fallbacks=[CommandHandler("cancel", cancel)],
         name="my_conversation",
         persistent=True
     )
-    MessageHandler(filters.CONTACT & ~filters.COMMAND, fill_phone_number)
 
     application.add_handler(conv_handler)
 
