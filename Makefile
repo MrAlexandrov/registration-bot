@@ -1,53 +1,47 @@
+# Makefile
+
 # Переменные
-APP_NAME=registration-bot
-DOCKER_IMAGE=registration-bot-image
-DOCKER_TEST_CONTAINER=registration-bot-test
-TEST_DIR=tests
+PROJECT_NAME = pioneer_trip_bot
+IMAGE_NAME = $(PROJECT_NAME):latest
+TEST_IMAGE_NAME = $(PROJECT_NAME)-test:latest
+CONTAINER_NAME = $(PROJECT_NAME)-container
 
-.PHONY: help install run build-docker docker-run docker-stop docker-clean docker-test test
+# Цели по умолчанию
+.PHONY: install run test clean docker-build docker-run docker-test docker-clean
 
-help:
-	@echo "Используйте 'make <command>' для запуска одной из следующих команд:"
-	@echo "  install          - Установить зависимости локально"
-	@echo "  run              - Запустить бота локально"
-	@echo "  test             - Запустить тесты локально"
-	@echo "  build-docker     - Собрать Docker-образ"
-	@echo "  docker-run       - Запустить бота в Docker-контейнере"
-	@echo "  docker-stop      - Остановить запущенный Docker-контейнер"
-	@echo "  docker-clean     - Удалить контейнер и образ"
-	@echo "  docker-test      - Запустить тесты в Docker-контейнере"
+# Локальные команды
 
 install:
-	@echo "Установка зависимостей..."
 	pip install -r requirements.txt
 
 run:
-	@echo "Запуск бота локально..."
 	python src/main.py
 
-build-docker:
-	@echo "Сборка Docker-образа..."
-	docker build -t $(DOCKER_IMAGE) .
+test:
+	pytest tests/
+
+clean:
+	find . -type f -name '*.pyc' -delete
+	find . -type d -name '__pycache__' -exec rm -rf {} +
+
+# Команды для Docker
+
+docker-build:
+	docker build -t $(IMAGE_NAME) -f Dockerfile .
 
 docker-run:
-	@echo "Запуск Docker-контейнера..."
-	docker run --env-file .env --name $(APP_NAME) $(DOCKER_IMAGE)
+	docker run --rm -it \
+		--name $(CONTAINER_NAME) \
+		--env-file .env \
+		$(IMAGE_NAME)
 
-docker-stop:
-	@echo "Остановка Docker-контейнера..."
-	docker stop $(APP_NAME) || true
-	docker rm $(APP_NAME) || true
+docker-test:
+	docker build -t $(TEST_IMAGE_NAME) -f Dockerfile.test .
+	docker run --rm \
+		--env-file .env \
+		$(TEST_IMAGE_NAME)
 
-docker-clean: docker-stop
-	@echo "Удаление Docker-образа..."
-	docker rmi $(DOCKER_IMAGE) || true
-
-test:
-	@echo "Запуск тестов локально..."
-	pytest $(TEST_DIR)
-
-docker-test: build-docker
-	@echo "Запуск тестов в Docker-контейнере..."
-	docker build -t $(DOCKER_IMAGE)-test -f Dockerfile.test .
-	docker run --name $(DOCKER_TEST_CONTAINER) $(DOCKER_IMAGE)-test pytest $(TEST_DIR)
-	docker rm $(DOCKER_TEST_CONTAINER)
+docker-clean:
+	docker rm -f $(CONTAINER_NAME) || true
+	docker rmi $(IMAGE_NAME) || true
+	docker rmi $(TEST_IMAGE_NAME) || true

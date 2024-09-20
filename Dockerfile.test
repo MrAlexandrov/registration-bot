@@ -1,21 +1,14 @@
-# Используем базовый образ Python
+# Dockerfile.test
+
 FROM python:3.10-slim
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы с зависимостями
 COPY requirements.txt .
-COPY tests/ ./tests
-COPY src/ ./src
-COPY scenario.json ./
-COPY .env ./
+COPY tests/ ./tests/
+COPY src/ ./src/
 
-# Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install pytest
 
-# Устанавливаем зависимости для тестов
-RUN pip install pytest pytest-asyncio pytest-mock
-
-# Запускаем pytest для тестирования
-CMD ["pytest", "tests"]
+CMD ["pytest", "tests/"]
