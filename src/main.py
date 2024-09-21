@@ -285,8 +285,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
-async def wrapper()
-
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it your bot's token.
