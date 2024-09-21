@@ -17,11 +17,12 @@ from telegram.ext import (
     PicklePersistence,
     filters,
 )
+from logger import logger
 from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
-# from bot_logging import logger
 # from state_manager import get_user_state, set_user_state, load_scenario
 from storage import CSVFileStorage, GoogleSheetsStorage, UserStorage, CombinedStorage
 from user import User
+
 
 storage = CombinedStorage(
     csv_file_name="users.csv",
@@ -90,6 +91,7 @@ def save_user_data(context):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    logger.info(f"Пользователь {user_id} начал взаимодействие.")
     context.user_data["user_id"] = user_id
     context.user_data["username"] = update.effective_user.username or None
 
@@ -283,6 +285,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
+async def wrapper()
 
 def main() -> None:
     """Run the bot."""
