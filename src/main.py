@@ -22,7 +22,7 @@ from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNA
 # from state_manager import get_user_state, set_user_state, load_scenario
 from storage import CSVFileStorage, GoogleSheetsStorage, UserStorage, CombinedStorage
 from user import User
-
+from texts import TEXT_ABOUT, TEXT_WHAT_TO_TAKE
 
 storage = CombinedStorage(
     csv_file_name="users.csv",
@@ -207,12 +207,12 @@ async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE
     return FINISHED
 
 async def about_trip(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Пионерский выезд - один из лучших выездов что проходят с сентября по конец августа и с начала мая по конец мая!)")
+    await update.message.reply_text(TEXT_ABOUT)
     await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
     return FINISHED
 
 async def what_to_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Трусы и куртку!")
+    await update.message.reply_text(TEXT_WHAT_TO_TAKE)
     await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
     return FINISHED
 
