@@ -1,1 +1,1 @@
-timestamp,user_id,username,first_name,last_name,patronymic,group,phone_number,expectations,food_wishes
+user_id,timestamp,username,full_name,birth_date,study_group,phone_number,expectations,food_wishes
