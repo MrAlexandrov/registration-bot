@@ -17,19 +17,22 @@ from telegram.ext import (
     PicklePersistence,
     filters,
 )
+from keyboards import *
 from logger import logger
 from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
 # from state_manager import get_user_state, set_user_state, load_scenario
-from storage import CSVFileStorage, GoogleSheetsStorage, UserStorage, CombinedStorage
+from storage import CSVFileStorage, GoogleSheetsStorage, SQLiteStorage, CombinedStorage
 from user import User
-from texts import TEXT_ABOUT, TEXT_WHAT_TO_TAKE
+from texts import TEXT_HELLO, TEXT_ABOUT, TEXT_WHAT_TO_TAKE
 
 storage = CombinedStorage(
     csv_file_name="users.csv",
     credentials_file=GOOGLE_CREDENTIALS_FILE,
     spreadsheet_id=SPREADSHEET_ID,
     fieldnames=FIELDNAMES,
-    debug_mode=False
+    debug_mode=False,
+    # use_sqlite=True,  # Включаем SQLite
+    # sqlite_db_path="users.db"  # Путь к SQLite базе данных
 )
 
 # WRITING_FIRST_NAME = "Заполнение имени"
@@ -45,10 +48,9 @@ storage = CombinedStorage(
  WRITING_PHONE_NUMBER, WRITING_EXPECTATIONS, WRITING_FOOD_WISHES,
  FINISHED, CHANGE_DATA_OPTION) = range(9)
 
-
-ABOUT_TRIP = "O выезде"
-WHAT_TO_TAKE = "Что взять?"
-CHANGE_DATA = "Изменить данные"
+# ABOUT_TRIP = "O выезде"
+# WHAT_TO_TAKE = "Что взять?"
+# CHANGE_DATA = "Изменить данные"
 
 CALLBACK_WRITING_FIRST_NAME = WRITING_LAST_NAME
 CALLBACK_WRITING_LAST_NAME = WRITING_PATRONYMIC
@@ -64,15 +66,9 @@ WHAT_TO_TAKE_CALLBACK = FINISHED
 CHANGE_DATA_CALLBACK = FINISHED
 
 
-ABOUT_TRIP = "O выезде"
-WHAT_TO_TAKE = "Что взять?"
-CHANGE_DATA = "Изменить данные"
-
-reply_keyboard = [
-    [ABOUT_TRIP, WHAT_TO_TAKE],
-    [CHANGE_DATA]
-]
-markup_reply_keyboard = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+# ABOUT_TRIP = "O выезде"
+# WHAT_TO_TAKE = "Что взять?"
+# CHANGE_DATA = "Изменить данные"
 
 def save_user_data(context):
     user = User(
@@ -82,12 +78,21 @@ def save_user_data(context):
         first_name=context.user_data.get("first_name", ""),
         last_name=context.user_data.get("last_name", ""),
         patronymic=context.user_data.get("patronymic", ""),
-        group=context.user_data.get("group", ""),
+        study_group=context.user_data.get("study_group", ""),
         phone_number=context.user_data.get("phone_number", ""),
         expectations=context.user_data.get("expectations", ""),
         food_wishes=context.user_data.get("food_wishes", "")
     )
     storage.save_user(user)
+
+
+# async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     user_id = update.effective_user.id
+#     logger.info(f"Пользователь {user_id} начал взаимодействие.")
+#     context.user_data["user_id"] = user_id
+#     context.user_data["username"] = update.effective_user.username or None
+
+#     await update.message.reply_text(TEXT_HELLO)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -95,13 +100,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["user_id"] = user_id
     context.user_data["username"] = update.effective_user.username or None
 
-    reply_text = "Привет! Я бот для регистрации на Пионерский выезд 2024!"
-    await update.message.reply_text(reply_text)
+    await update.message.reply_text(TEXT_HELLO)
     if context.user_data.get("registered"):
         reply_text = (
             f"Мы уже знакомы, {context.user_data.get('first_name')}! Чем могу помочь?"
         )
-        await update.message.reply_text(reply_text, reply_markup=markup_reply_keyboard)
+        await update.message.reply_text(reply_text, reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         context.user_data["timestamp"] = str(datetime.now())
@@ -115,7 +119,7 @@ async def writing_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Имя обновлено.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text(f"Отлично, {text}! А теперь введи свою фамилию:")
@@ -127,7 +131,7 @@ async def writing_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Фамилия обновлена.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text("А теперь введи своё отчество:")
@@ -139,7 +143,7 @@ async def writing_patronymic(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Отчество обновлено.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text("А теперь введи свою группу:")
@@ -150,11 +154,11 @@ markup_ask_phone_number = ReplyKeyboardMarkup([[ ask_phone_number ]], one_time_k
 
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    context.user_data["group"] = text
+    context.user_data["study_group"] = text
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Группа обновлена.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text(
@@ -174,7 +178,7 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Номер телефона обновлён.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text("Что ты ожидаешь от выезда?", reply_markup=ReplyKeyboardRemove())
@@ -189,7 +193,7 @@ async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYP
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Ожидания обновлены.")
-        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text("Есть ли у тебя аллергия на еду?", reply_markup=markup_answer_no)
@@ -202,18 +206,18 @@ async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE
     save_user_data(context)
     await update.message.reply_text(
         "Поздравляю! Теперь ты зарегистрирован(а) на Пионерский выезд!",
-        reply_markup=markup_reply_keyboard
+        reply_markup=main_menu_keyboard
     )
     return FINISHED
 
 async def about_trip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(TEXT_ABOUT)
-    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
     return FINISHED
 
 async def what_to_take(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(TEXT_WHAT_TO_TAKE)
-    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=markup_reply_keyboard)
+    await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
     return FINISHED
 
 change_data_keyboard = [
@@ -252,7 +256,7 @@ async def change_data_option(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("Введите новые особенности питания:")
         return WRITING_FOOD_WISHES
     elif choice == "Назад":
-        await update.message.reply_text("Возвращаемся назад.", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Возвращаемся назад.", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
         await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=markup_change_data)
@@ -267,7 +271,7 @@ async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == CHANGE_DATA:
         return await change_data(update, context)
     else:
-        await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=markup_reply_keyboard)
+        await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=main_menu_keyboard)
         return FINISHED
 
 def facts_to_str(user_data: Dict[str, str]) -> str:
@@ -284,6 +288,16 @@ async def show_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
+
+async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    users = storage.sqlite_storage.get_all_users()
+    if users:
+        users_str = "\n\n".join(str(user) for user in users)  # Преобразуем каждого пользователя в строку
+    else:
+        users_str = "No users found."
+    
+    await update.message.reply_text(users_str)
+    return FINISHED
 
 def main() -> None:
     """Run the bot."""
@@ -316,6 +330,10 @@ def main() -> None:
     )
 
     application.add_handler(conv_handler)
+
+    # application.add_handler(CommandHandler("start", start))
+
+    application.add_handler(CommandHandler("show_users", show_users))
 
     show_data_handler = CommandHandler("show_data", show_data)
     application.add_handler(show_data_handler)

@@ -10,17 +10,18 @@ SPREADSHEET_ID = getenv('SPREADSHEET_ID')
 GOOGLE_CREDENTIALS_FILE = getenv('GOOGLE_CREDENTIALS_FILE')
 
 FIELDNAMES = [
-    "timestamp", 
     "user_id", 
+    "timestamp", 
     "username", 
     "first_name", 
     "last_name", 
     "patronymic", 
-    "group", 
+    "study_group", 
     "phone_number", 
     "expectations", 
     "food_wishes"
 ]
+
 
 if BOT_TOKEN is None:
     raise ValueError("Токен не найден! Убедитесь, что файл .env правильно настроен.")
