@@ -35,22 +35,9 @@ storage = CombinedStorage(
     # sqlite_db_path="users.db"  # Путь к SQLite базе данных
 )
 
-# WRITING_FIRST_NAME = "Заполнение имени"
-# WRITING_LAST_NAME = "Заполнение фамилии"
-# WRITING_PATRONYMIC = "Заполнение отчства"
-# WRITING_GROUP = "Заполнение группы"
-# WRITING_PHONE_NUMBER = "Заполнение номера телефона"
-# WRITING_EXPECTATIONS = "Заполнение ожиданий"
-# WRITING_FOOD_WISHES = "Заполнение особенностей питания"
-# FINISHED = "Регистрация закончена"
-
 (WRITING_FULL_NAME, WRITING_BIRTH_DATE, WRITING_GROUP,
  WRITING_PHONE_NUMBER, WRITING_EXPECTATIONS, WRITING_FOOD_WISHES,
  FINISHED, CHANGE_DATA_OPTION) = range(8)
-
-# ABOUT_TRIP = "O выезде"
-# WHAT_TO_TAKE = "Что взять?"
-# CHANGE_DATA = "Изменить данные"
 
 CALLBACK_WRITING_FULL_NAME = WRITING_BIRTH_DATE
 CALLBACK_WRITING_BIRTH_DATE = WRITING_GROUP
@@ -64,10 +51,6 @@ ABOUT_TRIP_CALLBACK = FINISHED
 WHAT_TO_TAKE_CALLBACK = FINISHED
 CHANGE_DATA_CALLBACK = FINISHED
 
-
-# ABOUT_TRIP = "O выезде"
-# WHAT_TO_TAKE = "Что взять?"
-# CHANGE_DATA = "Изменить данные"
 
 def save_user_data(context):
     user = User(
@@ -124,42 +107,6 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text(TEXT_ASK_GROUP_FIRST_TIME)
         return WRITING_GROUP
-
-# async def writing_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     text = update.message.text
-#     context.user_data["first_name"] = text
-#     if context.user_data.get("registered"):
-#         save_user_data(context)
-#         await update.message.reply_text("Имя обновлено.")
-#         await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
-#         return FINISHED
-#     else:
-#         await update.message.reply_text(f"Отлично, {text}! А теперь введи свою фамилию:")
-#         return WRITING_LAST_NAME
-
-# async def writing_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     text = update.message.text
-#     context.user_data["last_name"] = text
-#     if context.user_data.get("registered"):
-#         save_user_data(context)
-#         await update.message.reply_text("Фамилия обновлена.")
-#         await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
-#         return FINISHED
-#     else:
-#         await update.message.reply_text("А теперь введи своё отчество:")
-#         return WRITING_PATRONYMIC
-
-# async def writing_patronymic(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     text = update.message.text
-#     context.user_data["patronymic"] = text
-#     if context.user_data.get("registered"):
-#         save_user_data(context)
-#         await update.message.reply_text("Отчество обновлено.")
-#         await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
-#         return FINISHED
-#     else:
-#         await update.message.reply_text("А теперь введи свою группу:")
-#         return WRITING_GROUP
 
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_group")
@@ -225,7 +172,7 @@ async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE
             TEXT_CONGRATULATIONS_FOR_REGISTRATION,
             reply_markup=main_menu_keyboard
         )
-        # TODO: show data 
+        
 
     return FINISHED
 
@@ -295,26 +242,24 @@ def facts_to_str(user_data: Dict[str, str]) -> str:
 async def show_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display the gathered info."""
     await update.message.reply_text(
-        f"Вот, что я о тебе знаю: {facts_to_str(context.user_data)}"
+        f"Вот, что я записал, но ты можешь изменть: {facts_to_str(context.user_data)}"
     )
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
-async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    users = storage.sqlite_storage.get_all_users()
-    if users:
-        users_str = "\n\n".join(str(user) for user in users)  # Преобразуем каждого пользователя в строку
-    else:
-        users_str = "No users found."
+# async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     users = storage.sqlite_storage.get_all_users()
+#     if users:
+#         users_str = "\n\n".join(str(user) for user in users)
+#     else:
+#         users_str = "No users found."
     
-    await update.message.reply_text(users_str)
-    return FINISHED
+#     await update.message.reply_text(users_str)
+#     return FINISHED
 
 def main() -> None:
-    """Run the bot."""
-    # Create the Application and pass it your bot's token.
     persistence = PicklePersistence(filepath="conversationbot")
     application = Application.builder().token(BOT_TOKEN).persistence(persistence).build()
 
@@ -343,10 +288,10 @@ def main() -> None:
 
     application.add_handler(conv_handler)
 
-    application.add_handler(CommandHandler("show_users", show_users))
+    # application.add_handler(CommandHandler("show_users", show_users))
 
-    show_data_handler = CommandHandler("show_data", show_data)
-    application.add_handler(show_data_handler)
+    # show_data_handler = CommandHandler("show_data", show_data)
+    # application.add_handler(show_data_handler)
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 

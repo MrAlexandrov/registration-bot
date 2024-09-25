@@ -163,7 +163,7 @@ class CombinedStorage(UserStorage):
     
     def __init__(self, csv_file_name, credentials_file, spreadsheet_id, fieldnames=FIELDNAMES, sheet_id=0, sheet_title=None, debug_mode=False, use_sqlite=False, sqlite_db_path="users.db"):
         """
-        Инициализация хранилищ данных для CSV и Google таблицы.
+        Инициализация хранилищ данных
         
         :param csv_file_name: Имя файла CSV.
         :param credentials_file: Путь к файлу с учетными данными для Google API.
@@ -181,29 +181,22 @@ class CombinedStorage(UserStorage):
             self.sqlite_storage = None
 
     def save_user(self, user):
-        """Сохранение данных пользователя в оба хранилища."""
         self.csv_storage.save_user(user)
         self.google_storage.save_user(user)
         if self.sqlite_storage:
             self.sqlite_storage.save_user(user)
 
     def get_all_users(self):
-        """Получение всех пользователей из обоих хранилищ."""
-        # Читаем из обоих хранилищ (можно вернуть только из одного или объединить данные, если это нужно)
         csv_users = self.csv_storage.get_all_users()
         google_users = self.google_storage.get_all_users()
         if self.sqlite_storage:
             users_sqlite = self.sqlite_storage.get_all_users()
-            # Можно объединить данные или выбрать одно из хранилищ
-            # Например, использовать SQLite как основное
             return users_sqlite
         return google_users
     
     def get_user(self, user_id: int):
-        """Получение пользователя по ID из SQLite."""
         if self.sqlite_storage:
             return self.sqlite_storage.get_user(user_id)
-        # Альтернативно, можно добавить получение из других хранилищ
         return None
     
     def close(self):

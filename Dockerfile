@@ -1,14 +1,15 @@
-# Dockerfile
+# Используем базовый образ Python
+FROM python:3.9-slim
 
-FROM python:3.10-slim
-
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
+# Копируем файл зависимостей и устанавливаем их
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./credentials.json ./
-COPY ./src/ ./src/
+# Копируем весь проект в контейнер
+COPY . .
 
+# Определяем команду запуска бота
 CMD ["python", "src/main.py"]
