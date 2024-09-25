@@ -21,16 +21,15 @@ docker-run:
 		--env-file .env \
 		$(IMAGE_NAME)
 
-docker-clean:
-	docker rm -f $(CONTAINER_NAME) || true
-	docker rmi $(IMAGE_NAME) || true
-	docker rmi $(TEST_IMAGE_NAME) || true
-
 docker-stop:
 	docker stop $(CONTAINER_NAME)
 
 docker-remove:
 	docker rm $(CONTAINER_NAME)
 
+docker-clean:
+	docker rm -f $(CONTAINER_NAME) || true
+	docker rmi $(IMAGE_NAME) || true
+	docker rmi $(TEST_IMAGE_NAME) || true
 
 .PHONY: install run docker-build docker-run docker-stop docker-remove help

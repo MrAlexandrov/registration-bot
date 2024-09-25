@@ -25,6 +25,7 @@ from storage import CSVFileStorage, GoogleSheetsStorage, SQLiteStorage, Combined
 from user import User
 from texts import *
 
+# TODO: Сделать различные хранилища опциональными
 storage = CombinedStorage(
     csv_file_name="users.csv",
     credentials_file=GOOGLE_CREDENTIALS_FILE,
