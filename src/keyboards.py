@@ -3,11 +3,12 @@ from telegram import ReplyKeyboardMarkup, KeyboardButton
 ABOUT_TRIP = "O выезде"
 WHAT_TO_TAKE = "Что взять?"
 CHANGE_DATA = "Изменить данные"
+SHOW_DATA = "Показать данные"
 
 main_menu_keyboard = ReplyKeyboardMarkup(
     [
         [ABOUT_TRIP, WHAT_TO_TAKE],
-        [CHANGE_DATA]
+        [SHOW_DATA, CHANGE_DATA]
     ],
     one_time_keyboard=True
 )

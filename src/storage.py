@@ -98,24 +98,26 @@ class SQLiteStorage:
     def _create_table(self):
         # Исключаем 'user_id' из FIELDNAMES, так как он уже объявлен отдельно
         columns = ", ".join([f"{field} TEXT" for field in FIELDNAMES if field != "user_id"])
-        self.cursor.execute(f"""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                {columns}
-            )
-        """)
-        self.connection.commit()
+        with self.connection as conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id INTEGER PRIMARY KEY,
+                    {columns}
+                )
+            """)
 
     def save_user(self, user: User):
         placeholders = ", ".join(["?"] * len(FIELDNAMES))
         fields = ", ".join(FIELDNAMES)
         values = [getattr(user, field) for field in FIELDNAMES]
         values.insert(0, user.user_id)  # Добавляем user_id как первый параметр
-        self.cursor.execute(f"""
-            INSERT OR REPLACE INTO users (user_id, {fields})
-            VALUES ({placeholders}, ?)
-        """, values)
-        self.connection.commit()
+        with self.connection as conn:
+            conn.execute(f"""
+                INSERT INTO users (user_id, {fields})
+                VALUES ({placeholders}, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                {', '.join([f'{field} = EXCLUDED.{field}' for field in FIELDNAMES])}
+            """, values)
 
     def get_user(self, user_id: int) -> User:
         self.cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))

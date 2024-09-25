@@ -24,6 +24,7 @@ from settings import BOT_TOKEN, SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNA
 from storage import CSVFileStorage, GoogleSheetsStorage, SQLiteStorage, CombinedStorage
 from user import User
 from texts import *
+from filters import check_admin_filter
 
 # TODO: Сделать различные хранилища опциональными
 storage = CombinedStorage(
@@ -32,8 +33,8 @@ storage = CombinedStorage(
     spreadsheet_id=SPREADSHEET_ID,
     fieldnames=FIELDNAMES,
     debug_mode=False,
-    # use_sqlite=True,  # Включаем SQLite
-    # sqlite_db_path="users.db"  # Путь к SQLite базе данных
+    use_sqlite=True,  # Включаем SQLite
+    sqlite_db_path="users.db"  # Путь к SQLite базе данных
 )
 
 (WRITING_FULL_NAME, WRITING_BIRTH_DATE, WRITING_GROUP,
@@ -85,7 +86,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_full_name")
-    text = update.message.text
+    text = str(update.message.text)
     context.user_data["full_name"] = text
     if context.user_data.get("registered"):
         save_user_data(context)
@@ -98,7 +99,7 @@ async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_birth_date")
-    text = update.message.text
+    text = str(update.message.text)
     context.user_data["birth_date"] = text
     if context.user_data.get("registered"):
         save_user_data(context)
@@ -111,7 +112,7 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_group")
-    text = update.message.text
+    text = str(update.message.text)
     context.user_data["study_group"] = text
     if context.user_data.get("registered"):
         save_user_data(context)
@@ -129,10 +130,10 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
     logger.debug("writing_phone_number")
     if update.message.contact is not None:
         # Пользователь поделился контактом
-        phone_number = update.message.contact.phone_number
+        phone_number = str(update.message.contact.phone_number)
     else:
         # Пользователь ввёл номер вручную
-        phone_number = update.message.text
+        phone_number = str(update.message.text)
     context.user_data["phone_number"] = phone_number
     if context.user_data.get("registered"):
         save_user_data(context)
@@ -148,7 +149,7 @@ markup_answer_no = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
 
 async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_expectations")
-    text = update.message.text
+    text = str(update.message.text)
     context.user_data["expectations"] = text
     if context.user_data.get("registered"):
         save_user_data(context)
@@ -159,9 +160,26 @@ async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text(TEXT_ASK_FOOD_WISHES_FIRST_TIME, reply_markup=markup_answer_no)
         return WRITING_FOOD_WISHES
 
+async def show_public_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.user_data["user_id"]
+    user_data = storage.get_user(user_id).to_public_dict()
+    if user_data:
+        message = (
+            f"Имя: {user_data.get('full_name')}\n"
+            f"Дата рождения: {user_data.get('birth_date')}\n"
+            f"Группа: {user_data.get('study_group')}\n"
+            f"Телефон: {user_data.get('phone_number')}\n"
+            f"Ожидания: {user_data.get('expectations')}\n"
+            f"Пожелания по питанию: {user_data.get('food_wishes')}"
+        )
+    else:
+        message = "Данные о вас не найдены"
+        
+    await update.message.reply_text(message)
+
 async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_food_wishes")
-    text = update.message.text
+    text = str(update.message.text)
     context.user_data["food_wishes"] = text
     save_user_data(context)
     if context.user_data.get("registered"):
@@ -173,7 +191,8 @@ async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE
             TEXT_CONGRATULATIONS_FOR_REGISTRATION,
             reply_markup=main_menu_keyboard
         )
-        
+        await update.message.reply_text("Вот, что я о тебе знаю, если что-то не так, поправь")
+        await show_public_data(update, context)
 
     return FINISHED
 
@@ -231,6 +250,10 @@ async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await what_to_take(update, context)
     elif text == CHANGE_DATA:
         return await change_data(update, context)
+    elif text == SHOW_DATA:
+        await show_public_data(update, context)
+        await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
+        return FINISHED
     else:
         await update.message.reply_text("Пожалуйста, выбери один из вариантов.", reply_markup=main_menu_keyboard)
         return FINISHED
@@ -240,25 +263,22 @@ def facts_to_str(user_data: Dict[str, str]) -> str:
     facts = [f"{key} - {value}" for key, value in user_data.items()]
     return "\n".join(facts).join(["\n", "\n"])
 
-async def show_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Display the gathered info."""
-    await update.message.reply_text(
-        f"Вот, что я записал, но ты можешь изменть: {facts_to_str(context.user_data)}"
-    )
-
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
-# async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     users = storage.sqlite_storage.get_all_users()
-#     if users:
-#         users_str = "\n\n".join(str(user) for user in users)
-#     else:
-#         users_str = "No users found."
+async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    users = storage.sqlite_storage.get_all_users()
+    if users:
+        users_str = "\n\n".join(str(user) for user in users)
+    else:
+        users_str = "No users found."
     
-#     await update.message.reply_text(users_str)
-#     return FINISHED
+    await update.message.reply_text(users_str)
+    return FINISHED
+
+# async def after_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     if 
 
 def main() -> None:
     persistence = PicklePersistence(filepath="conversationbot")
@@ -276,10 +296,8 @@ def main() -> None:
             ],
             WRITING_EXPECTATIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_expectations)],
             WRITING_FOOD_WISHES: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_food_wishes)],
+            # Эти команды становятся доступны только после завершения регистрации
             FINISHED: [MessageHandler(filters.TEXT & ~filters.COMMAND, finished)],
-            # ABOUT_TRIP: [MessageHandler(filters.Regex(f"^{ABOUT_TRIP}$"), about_trip)],
-            # WHAT_TO_TAKE: [MessageHandler(filters.Regex(f"^{WHAT_TO_TAKE}$"), what_to_take)],
-            # CHANGE_DATA: [MessageHandler(filters.Regex(f"^{CHANGE_DATA}$"), change_data)],
             CHANGE_DATA_OPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, change_data_option)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
@@ -289,7 +307,9 @@ def main() -> None:
 
     application.add_handler(conv_handler)
 
-    # application.add_handler(CommandHandler("show_users", show_users))
+
+    # application.add_handler(CommandHandler("show_data", show_public_data))
+    application.add_handler(CommandHandler("show_users", show_users, filters=check_admin_filter))
 
     # show_data_handler = CommandHandler("show_data", show_data)
     # application.add_handler(show_data_handler)

@@ -34,6 +34,16 @@ class User:
             "food_wishes":      self.food_wishes
         }
 
+    def to_public_dict(self):
+        return {
+            "full_name":        self.full_name,
+            "birth_date":       self.birth_date,
+            "study_group":      self.study_group,
+            "phone_number":     self.phone_number,
+            "expectations":     self.expectations,
+            "food_wishes":      self.food_wishes
+        }
+
     @classmethod
     def from_dict(cls, data):
         return cls(
