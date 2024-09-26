@@ -16,7 +16,7 @@ docker-build:
 	docker build -t $(IMAGE_NAME) -f Dockerfile .
 
 docker-run:
-	docker run -it \
+	docker run -d -it \
 		--name $(CONTAINER_NAME) \
 		--env-file .env \
 		$(IMAGE_NAME)
