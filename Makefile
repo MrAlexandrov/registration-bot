@@ -1,4 +1,4 @@
-PROJECT_NAME = registration_bot
+PROJECT_NAME = registration-bot
 IMAGE_NAME = $(PROJECT_NAME):latest
 CONTAINER_NAME = $(PROJECT_NAME)-container
 
@@ -16,7 +16,7 @@ docker-build:
 	docker build -t $(IMAGE_NAME) -f Dockerfile .
 
 docker-run:
-	docker run --rm -it \
+	docker run -it \
 		--name $(CONTAINER_NAME) \
 		--env-file .env \
 		$(IMAGE_NAME)
