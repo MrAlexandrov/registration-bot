@@ -36,7 +36,7 @@ change_data_keyboard = ReplyKeyboardMarkup(
     one_time_keyboard=True
 )
 
-# def next_step_keyboard(field_name):
-#     if field_name == "study_group":
-#         return ask_phone_number_keyboard
-#     return ReplyKeyboardMarkup([["Далее"]], one_time_keyboard=True)
+answer_no = ["Нет"]
+answer_no_keyboard = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
+
+# markup_answer_no = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
