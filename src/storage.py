@@ -5,6 +5,8 @@ from user import User
 from settings import FIELDNAMES
 import sqlite3
 from typing import List
+from logger import logger
+
 
 class UserStorage:
     """Абстрактный интерфейс для хранения данных пользователей."""
@@ -176,7 +178,10 @@ class CombinedStorage(UserStorage):
         :param debug_mode: Флаг включения режима отладки.
         """
         self.csv_storage = CSVFileStorage(file_name=csv_file_name, fieldnames=fieldnames)
-        self.google_storage = GoogleSheetsStorage(credentials_file, spreadsheet_id, fieldnames=fieldnames, sheet_id=sheet_id, sheet_title=sheet_title, debug_mode=debug_mode)
+        try:
+            self.google_storage = GoogleSheetsStorage(credentials_file, spreadsheet_id, fieldnames=fieldnames, sheet_id=sheet_id, sheet_title=sheet_title, debug_mode=debug_mode)
+        except:
+            logger.error("Can't initialize google storage")
         if use_sqlite:
             self.sqlite_storage = SQLiteStorage(db_path=sqlite_db_path)
         else:
@@ -184,13 +189,19 @@ class CombinedStorage(UserStorage):
 
     def save_user(self, user):
         self.csv_storage.save_user(user)
-        self.google_storage.save_user(user)
+        try:
+            self.google_storage.save_user(user)
+        except:
+            logger.error(f"Error, while saving in google storage user({user})")
         if self.sqlite_storage:
             self.sqlite_storage.save_user(user)
 
     def get_all_users(self):
         csv_users = self.csv_storage.get_all_users()
-        google_users = self.google_storage.get_all_users()
+        try:
+            google_users = self.google_storage.get_all_users()
+        except:
+            logger.error(f"Error, while getting all users from google storage")
         if self.sqlite_storage:
             users_sqlite = self.sqlite_storage.get_all_users()
             return users_sqlite

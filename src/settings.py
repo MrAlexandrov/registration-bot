@@ -8,7 +8,7 @@ load_dotenv()
 BOT_TOKEN = getenv('BOT_TOKEN')
 SPREADSHEET_ID = getenv('SPREADSHEET_ID')
 GOOGLE_CREDENTIALS_FILE = getenv('GOOGLE_CREDENTIALS_FILE')
-ROOT_ID = getenv('ADMIN_ID')
+ROOT_ID = getenv('ROOT_ID')
 
 FIELDNAMES = [
     "user_id", 
@@ -22,9 +22,6 @@ FIELDNAMES = [
     "food_wishes"
 ]
 
-ADMIN_IDS = []
-ADMIN_IDS.append(int(ROOT_ID))
-
 if BOT_TOKEN is None:
     raise ValueError("Токен не найден! Убедитесь, что файл .env правильно настроен.")
 
@@ -33,3 +30,9 @@ if SPREADSHEET_ID is None:
 
 if GOOGLE_CREDENTIALS_FILE is None:
     raise ValueError("GOOGLE_CREDENTIALS_FILE не найден")
+
+if ROOT_ID is None:
+    raise ValueError("ROOT_ID не найден")
+
+ADMIN_IDS = []
+ADMIN_IDS.append(int(ROOT_ID))

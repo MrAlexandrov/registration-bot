@@ -75,15 +75,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["username"] = update.effective_user.username or None
 
     await update.message.reply_text(TEXT_HELLO)
-    if context.user_data.get("registered"):
-        reply_text = (f"Мы уже знакомы! Чем могу помочь?")
-        await update.message.reply_text(reply_text, reply_markup=main_menu_keyboard)
-        return FINISHED
-    else:
+    if storage.get_user(user_id=user_id) is None and context.user_data.get("registered") is None:
         context.user_data["timestamp"] = str(datetime.now())
         await update.message.reply_text(TEXT_ASK_FIO_FIRST_TIME)
         return WRITING_FULL_NAME
-    
+    else:
+        reply_text = (f"Мы уже знакомы! Чем могу помочь?")
+        await update.message.reply_text(reply_text, reply_markup=main_menu_keyboard)
+        return FINISHED
+
 async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_full_name")
     text = str(update.message.text)
@@ -96,7 +96,7 @@ async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(TEXT_ASK_BIRTH_DATE_FIRST_TIME)
         return WRITING_BIRTH_DATE
-    
+
 async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_birth_date")
     text = str(update.message.text)
@@ -173,8 +173,8 @@ async def show_public_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Пожелания по питанию: {user_data.get('food_wishes')}"
         )
     else:
-        message = "Данные о вас не найдены"
-        
+        message = "Данные о тебе не найдены"
+    
     await update.message.reply_text(message)
 
 async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -277,8 +277,8 @@ async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(users_str)
     return FINISHED
 
-# async def after_finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     if 
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(TEXT_HELP)
 
 def main() -> None:
     persistence = PicklePersistence(filepath="conversationbot")
@@ -296,7 +296,6 @@ def main() -> None:
             ],
             WRITING_EXPECTATIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_expectations)],
             WRITING_FOOD_WISHES: [MessageHandler(filters.TEXT & ~filters.COMMAND, writing_food_wishes)],
-            # Эти команды становятся доступны только после завершения регистрации
             FINISHED: [MessageHandler(filters.TEXT & ~filters.COMMAND, finished)],
             CHANGE_DATA_OPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, change_data_option)],
         },
@@ -311,6 +310,8 @@ def main() -> None:
     # application.add_handler(CommandHandler("show_data", show_public_data))
     application.add_handler(CommandHandler("show_users", show_users, filters=check_admin_filter))
 
+
+    application.add_handler(CommandHandler("help", help))
     # show_data_handler = CommandHandler("show_data", show_data)
     # application.add_handler(show_data_handler)
 
