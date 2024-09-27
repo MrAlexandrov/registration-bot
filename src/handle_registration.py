@@ -24,7 +24,7 @@ from texts import *
 from settings import SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
 from storage import CombinedStorage
 from user import User
-
+from validators import validate_date, validate_group, validate_phone
 
 
 (WRITING_FULL_NAME, WRITING_BIRTH_DATE, WRITING_GROUP,
@@ -113,8 +113,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_full_name")
-    text = str(update.message.text)
-    context.user_data["full_name"] = text
+    full_name = str(update.message.text)
+    context.user_data["full_name"] = full_name
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("ФИО обновлены.")
@@ -126,8 +126,11 @@ async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
 async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_birth_date")
-    text = str(update.message.text)
-    context.user_data["birth_date"] = text
+    birth_date = str(update.message.text)
+    if not validate_date(birth_date):
+        await update.message.reply_text("Неправильный формат даты, попробуй снова")
+        return WRITING_BIRTH_DATE
+    context.user_data["birth_date"] = birth_date
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("День Рождения изменён.")
@@ -136,11 +139,14 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text(TEXT_ASK_GROUP_FIRST_TIME)
         return WRITING_GROUP
-    
+
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_group")
-    text = str(update.message.text)
-    context.user_data["study_group"] = text
+    group = str(update.message.text)
+    if not validate_group(group):
+        await update.message.reply_text("Я не знаю такую группу, попробуй снова")
+        return WRITING_GROUP
+    context.user_data["study_group"] = group
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Группа обновлена.")
@@ -161,6 +167,12 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         # Пользователь ввёл номер вручную
         phone_number = str(update.message.text)
+    if not validate_phone(phone_number):
+        await update.message.reply_text(
+            "Неправильный формат номера телефона, попробуй снова", 
+            reply_markup=ask_phone_number_keyboard
+        )
+        return WRITING_PHONE_NUMBER
     context.user_data["phone_number"] = phone_number
     if context.user_data.get("registered"):
         save_user_data(context)

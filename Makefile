@@ -6,7 +6,10 @@ install:
 	pip install -r requirements.txt
 
 run:
-	python src/main.py
+	python3 src/main.py
+
+test:
+	pytest tests
 
 clean:
 	find . -type f -name '*.pyc' -delete
@@ -33,3 +36,16 @@ docker-clean:
 	docker rmi $(TEST_IMAGE_NAME) || true
 
 .PHONY: install run docker-build docker-run docker-stop docker-remove help
+
+
+
+.PHONY: connect
+connect:
+	ssh ${VM_USER}@${VM_IP_ADDRESS}
+
+# Deploy
+.PHONY: deploy
+deploy:
+	ssh ${VM_USER}@${VM_IP_ADDRESS} 'cd ~ && rm -rf * && mkdir src'
+	scp -r src/*.py ${VM_USER}@${VM_IP_ADDRESS}:~/src
+	scp -r start.sh .env credentials.json Makefile requirements.txt ${VM_USER}@${VM_IP_ADDRESS}:~
