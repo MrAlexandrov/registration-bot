@@ -35,4 +35,3 @@ if ROOT_ID is None:
     raise ValueError("ROOT_ID не найден")
 
 ADMIN_IDS = []
-ADMIN_IDS.append(int(ROOT_ID))

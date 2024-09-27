@@ -278,10 +278,12 @@ async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return FINISHED
     
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("cancel")
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
 async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("show_users")
     users = storage.sqlite_storage.get_all_users()
     if users:
         users_str = "\n\n".join(str(user) for user in users)
@@ -292,10 +294,12 @@ async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return FINISHED
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("help")
     await update.message.reply_text(TEXT_HELP)
 
 
 async def send_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("send_db")
     chat_id = update.effective_chat.id
     
     try:
@@ -306,6 +310,7 @@ async def send_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Не удалось отправить файл: {e}")
 
 def export_db_to_excel():
+    logger.debug("export_db_to_excel")
     # Подключаемся к базе данных
     conn = sqlite3.connect(DB_FILE_PATH)
     
@@ -319,6 +324,7 @@ def export_db_to_excel():
     conn.close()
 
 async def send_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("send_excel")
     chat_id = update.effective_chat.id
 
     try:
@@ -330,6 +336,36 @@ async def send_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Данные базы отправлены в формате Excel.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось отправить файл: {e}")
+
+from settings import ADMIN_IDS
+
+async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("add_admin")
+
+    # Получаем список аргументов команды
+    try:
+        new_admin_id = int(context.args[0])  # context.args[0] содержит первый аргумент после команды
+        if new_admin_id not in ADMIN_IDS:
+            ADMIN_IDS.append(new_admin_id)
+            await update.message.reply_text(f"Добавлен администратор с id = {new_admin_id}")
+        else:
+            await update.message.reply_text(f"Администратор с id = {new_admin_id} уже существует")
+    except (IndexError, ValueError):
+        await update.message.reply_text("Ошибка: введите корректный ID")
+
+async def delete_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.debug("delete_admin")
+
+    # Получаем список аргументов команды
+    try:
+        admin_id_to_delete = int(context.args[0])  # context.args[0] содержит первый аргумент после команды
+        if admin_id_to_delete in ADMIN_IDS:
+            ADMIN_IDS.remove(admin_id_to_delete)
+            await update.message.reply_text(f"Удален администратор с id = {admin_id_to_delete}")
+        else:
+            await update.message.reply_text(f"Администратора с id = {admin_id_to_delete} не существует")
+    except (IndexError, ValueError):
+        await update.message.reply_text("Ошибка: введите корректный ID")
 
 
 conv_handler = ConversationHandler(

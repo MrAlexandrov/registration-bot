@@ -18,8 +18,9 @@ from telegram.ext import (
 from logger import logger
 from settings import BOT_TOKEN
 # from texts import *
-from filters import check_admin_filter
-from handle_registration import show_users, send_db, send_excel, conv_handler
+from filters import check_admin_filter, check_root_filter
+from handle_registration import show_users, send_db, send_excel, conv_handler, help,\
+add_admin, delete_admin
 
 
 def main() -> None:
@@ -29,9 +30,11 @@ def main() -> None:
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("help", help))
 
-    application.add_handler(CommandHandler("show_users", show_users, filters=check_admin_filter))
-    application.add_handler(CommandHandler("send_db", send_db, filters=check_admin_filter))
-    application.add_handler(CommandHandler('send_excel', send_excel, filters=check_admin_filter))
+    application.add_handler(CommandHandler("show_users",    show_users,     filters=check_admin_filter))
+    application.add_handler(CommandHandler("send_db",       send_db,        filters=check_admin_filter))
+    application.add_handler(CommandHandler('send_excel',    send_excel,     filters=check_admin_filter))
+    application.add_handler(CommandHandler('add_admin',     add_admin,      filters=check_root_filter))
+    application.add_handler(CommandHandler('delete_admin',  delete_admin,   filters=check_root_filter))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
