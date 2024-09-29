@@ -3,3 +3,8 @@
 .env
 __pycache__
 credentials.json
+tests/unit/data
+conversationbot
+*.csv
+*.db
+*.jpg

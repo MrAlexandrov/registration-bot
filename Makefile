@@ -12,7 +12,7 @@ run:
 	python3 src/main.py
 
 test:
-	pytest tests
+	PYTHONPATH=src pytest tests
 
 clean:
 	find . -type f -name '*.pyc' -delete
@@ -49,15 +49,15 @@ connect:
 # Deploy
 .PHONY: deploy
 deploy:
-	ssh ${VM_USER}@${VM_IP_ADDRESS} 'cd ~ && rm -rf * && mkdir src'
-	scp -r src/*.py ${VM_USER}@${VM_IP_ADDRESS}:~/src
-	scp -r start.sh .env credentials.json Makefile requirements.txt ${VM_USER}@${VM_IP_ADDRESS}:~
+	ssh ${VM_USER}@${VM_IP_ADDRESS} 'cd ~ && mkdir $(PROJECT_NAME) && cd $(PROJECT_NAME) && mkdir src'
+	scp -r src/*.py ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/src
+	scp -r .git start.sh .env credentials.json Makefile requirements.txt ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)
 
-.PHONY: ci
-ci: deploy
-	@ echo "Stopping existing screen session..."
-	@ ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -S registration -X quit || true'
-	echo "Running start.sh..."
-	ssh ${VM_USER}@${VM_IP_ADDRESS} 'bash start.sh'
-	echo "Creating new screen session..."
-	ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -dmS registration bash -c "cd ~ && make run"'
+# .PHONY: ci
+# ci: deploy
+# 	@ echo "Stopping existing screen session..."
+# 	@ ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -S registration -X quit || true'
+# 	echo "Running start.sh..."
+# 	ssh ${VM_USER}@${VM_IP_ADDRESS} 'bash start.sh'
+# 	echo "Creating new screen session..."
+# 	ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -dmS registration bash -c "cd ~ && make run"'

@@ -17,6 +17,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 from typing import Dict
+import re
 
 from logger import logger
 from keyboards import *
@@ -128,7 +129,7 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
     logger.debug("writing_birth_date")
     birth_date = str(update.message.text)
     if not validate_date(birth_date):
-        await update.message.reply_text("Неправильный формат даты, попробуй снова")
+        await update.message.reply_text(TEXT_WRONG_DATE)
         return WRITING_BIRTH_DATE
     context.user_data["birth_date"] = birth_date
     if context.user_data.get("registered"):
@@ -144,7 +145,7 @@ async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_group")
     group = str(update.message.text)
     if not validate_group(group):
-        await update.message.reply_text("Я не знаю такую группу, попробуй снова")
+        await update.message.reply_text(TEXT_WRONG_GROUP)
         return WRITING_GROUP
     context.user_data["study_group"] = group
     if context.user_data.get("registered"):
@@ -167,9 +168,11 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         # Пользователь ввёл номер вручную
         phone_number = str(update.message.text)
+    # Удаляем все символы, кроме цифр
+    phone_number = re.sub(r'\D', '', phone_number)
     if not validate_phone(phone_number):
         await update.message.reply_text(
-            "Неправильный формат номера телефона, попробуй снова", 
+            TEXT_WRONG_PHONE_NUMBER,
             reply_markup=ask_phone_number_keyboard
         )
         return WRITING_PHONE_NUMBER
@@ -282,16 +285,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
 
-async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logger.debug("show_users")
-    users = storage.sqlite_storage.get_all_users()
-    if users:
-        users_str = "\n\n".join(str(user) for user in users)
-    else:
-        users_str = "No users found."
+# async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     logger.debug("show_users")
+#     users = storage.sqlite_storage.get_all_users()
+#     if users:
+#         users_str = "\n\n".join(str(user) for user in users)
+#     else:
+#         users_str = "No users found."
     
-    await update.message.reply_text(users_str)
-    return FINISHED
+#     await update.message.reply_text(users_str)
+#     return FINISHED
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("help")
