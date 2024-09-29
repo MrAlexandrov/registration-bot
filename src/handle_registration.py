@@ -26,6 +26,7 @@ from settings import SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
 from storage import CombinedStorage
 from user import User
 from validators import validate_date, validate_group, validate_phone
+from settings import ADMIN_IDS
 
 
 (WRITING_FULL_NAME, WRITING_BIRTH_DATE, WRITING_GROUP,
@@ -128,7 +129,7 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text(TEXT_WRONG_DATE)
         return WRITING_BIRTH_DATE
     
-    formatted_birth_date = format_date(birth_date)
+    formatted_birth_date = str(format_date(birth_date))
 
     context.user_data["birth_date"] = formatted_birth_date
     if context.user_data.get("registered"):
@@ -168,7 +169,7 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
         # Пользователь ввёл номер вручную
         phone_number = str(update.message.text)
     # Удаляем все символы, кроме цифр
-    phone_number = re.sub(r'\D', '', phone_number)
+    phone_number = str(re.sub(r'\D', '', phone_number))
     if not validate_phone(phone_number):
         await update.message.reply_text(
             TEXT_WRONG_PHONE_NUMBER,
@@ -187,8 +188,8 @@ async def writing_phone_number(update: Update, context: ContextTypes.DEFAULT_TYP
     
 async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_expectations")
-    text = str(update.message.text)
-    context.user_data["expectations"] = text
+    expectations = str(update.message.text)
+    context.user_data["expectations"] = expectations
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("Ожидания обновлены.")
@@ -200,8 +201,8 @@ async def writing_expectations(update: Update, context: ContextTypes.DEFAULT_TYP
     
 async def writing_food_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_food_wishes")
-    text = str(update.message.text)
-    context.user_data["food_wishes"] = text
+    food_wishes = str(update.message.text)
+    context.user_data["food_wishes"] = food_wishes
     save_user_data(context)
     if context.user_data.get("registered"):
         await update.message.reply_text("Особенности питания обновлены.")
@@ -236,7 +237,7 @@ async def change_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def change_data_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("change_data_option")
-    choice = update.message.text
+    choice = str(update.message.text)
     if choice == CHANGE_FIO_BUTTON:
         await update.message.reply_text(TEXT_ASK_FIO_AGAIN)
         return WRITING_FULL_NAME
@@ -264,7 +265,7 @@ async def change_data_option(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def finished(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("finished")
-    text = update.message.text
+    text = str(update.message.text)
     if text == ABOUT_TRIP:
         return await about_trip(update, context)
     elif text == WHAT_TO_TAKE:
@@ -327,8 +328,6 @@ async def send_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Данные базы отправлены в формате Excel.")
     except Exception as e:
         await update.message.reply_text(f"Не удалось отправить файл: {e}")
-
-from settings import ADMIN_IDS
 
 async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("add_admin")
