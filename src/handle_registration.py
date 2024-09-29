@@ -35,18 +35,6 @@ from validators import validate_date, validate_group, validate_phone
 DB_FILE_PATH = 'users.db'
 EXCEL_FILE_PATH = 'users.xlsx'
 
-# CALLBACK_WRITING_FULL_NAME = WRITING_BIRTH_DATE
-# CALLBACK_WRITING_BIRTH_DATE = WRITING_GROUP
-# CALLBACK_WRITING_GROUP = WRITING_PHONE_NUMBER
-# CALLBACK_WRITING_PHONE_NUMBER = WRITING_EXPECTATIONS
-# CALLBACK_WRITING_EXPECTATIONS = WRITING_FOOD_WISHES
-# CALLBACK_WRITING_FOOD_WISHES = FINISHED
-# CALLBACK_FINISHED = FINISHED
-
-# ABOUT_TRIP_CALLBACK = FINISHED
-# WHAT_TO_TAKE_CALLBACK = FINISHED
-# CHANGE_DATA_CALLBACK = FINISHED
-
 
 # TODO: Сделать различные хранилища опциональными
 storage = CombinedStorage(
@@ -124,14 +112,25 @@ async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(TEXT_ASK_BIRTH_DATE_FIRST_TIME)
         return WRITING_BIRTH_DATE
-    
+
+def format_date(date):
+    day, month, year = date.split('.')
+    # Форматируем день и месяц, добавляя ведущий ноль, если нужно
+    day = day.zfill(2)
+    month = month.zfill(2)
+    return f"{day}.{month}.{year}"
+
 async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("writing_birth_date")
     birth_date = str(update.message.text)
+
     if not validate_date(birth_date):
         await update.message.reply_text(TEXT_WRONG_DATE)
         return WRITING_BIRTH_DATE
-    context.user_data["birth_date"] = birth_date
+    
+    formatted_birth_date = format_date(birth_date)
+
+    context.user_data["birth_date"] = formatted_birth_date
     if context.user_data.get("registered"):
         save_user_data(context)
         await update.message.reply_text("День Рождения изменён.")
@@ -284,17 +283,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("cancel")
     await update.message.reply_text("Ты уже прошёл(ла) регистрацию. Если захочешь начать заново, отправь /start.")
     return ConversationHandler.END
-
-# async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     logger.debug("show_users")
-#     users = storage.sqlite_storage.get_all_users()
-#     if users:
-#         users_str = "\n\n".join(str(user) for user in users)
-#     else:
-#         users_str = "No users found."
-    
-#     await update.message.reply_text(users_str)
-#     return FINISHED
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.debug("help")
