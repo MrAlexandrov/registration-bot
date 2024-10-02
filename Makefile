@@ -51,13 +51,13 @@ connect:
 .PHONY: first-deploy
 first-deploy:
 	ssh ${VM_USER}@${VM_IP_ADDRESS} "git clone ${REPOSITORY_URL} || (cd ${DIRECTORY_NAME} && git pull)"
-	scp .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
+	scp -r .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
 
 .PHONY: deploy
 deploy:
 	ssh ${VM_USER}@${VM_IP_ADDRESS} "cd ~/${DIRECTORY_NAME} && git pull"
 	ssh ${VM_USER}@${VM_IP_ADDRESS} "cd ~/${DIRECTORY_NAME} && rm .env credentails.json"
-	scp .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
+	scp -r .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
 	# TODO: Обработать данные, которые есть
 
 
