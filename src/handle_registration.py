@@ -94,7 +94,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(TEXT_HELLO)
     if storage.get_user(user_id=user_id) is None and context.user_data.get("registered") is None:
         context.user_data["timestamp"] = str(datetime.now())
-        await update.message.reply_text(TEXT_ASK_FIO_FIRST_TIME)
+        await update.message.reply_text(TEXT_ASK_FIO_FIRST_TIME, reply_markup=ReplyKeyboardRemove())
         return WRITING_FULL_NAME
     else:
         reply_text = (f"Мы уже знакомы! Чем могу помочь?")
@@ -111,7 +111,7 @@ async def writing_full_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
-        await update.message.reply_text(TEXT_ASK_BIRTH_DATE_FIRST_TIME)
+        await update.message.reply_text(TEXT_ASK_BIRTH_DATE_FIRST_TIME, reply_markup=ReplyKeyboardRemove())
         return WRITING_BIRTH_DATE
 
 def format_date(date):
@@ -138,7 +138,7 @@ async def writing_birth_date(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("Чем ещё могу помочь?", reply_markup=main_menu_keyboard)
         return FINISHED
     else:
-        await update.message.reply_text(TEXT_ASK_GROUP_FIRST_TIME)
+        await update.message.reply_text(TEXT_ASK_GROUP_FIRST_TIME, reply_markup=ReplyKeyboardRemove())
         return WRITING_GROUP
 
 async def writing_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
