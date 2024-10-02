@@ -17,7 +17,7 @@ from telegram.ext import (
 from logger import logger
 from settings import BOT_TOKEN
 from filters import check_admin_filter, check_root_filter
-from handle_registration import show_users, send_db, send_excel, conv_handler, help,\
+from handle_registration import send_db, send_excel, conv_handler, help,\
 add_admin, delete_admin
 
 

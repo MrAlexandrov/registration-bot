@@ -9,13 +9,11 @@ main_menu_keyboard = ReplyKeyboardMarkup(
     [
         [ABOUT_TRIP, WHAT_TO_TAKE],
         [SHOW_DATA, CHANGE_DATA]
-    ],
-    one_time_keyboard=True
+    ]
 )
 
 ask_phone_number_keyboard = ReplyKeyboardMarkup(
-    [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]],
-    one_time_keyboard=True
+    [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]]
 )
 
 CHANGE_FIO_BUTTON="ФИО"
@@ -32,11 +30,10 @@ change_data_keyboard = ReplyKeyboardMarkup(
         [CHANGE_GROUP_BUTTON, CHANGE_PHONE_NUBER_BUTTON],
         [CHANGE_EXPECTATIONS_BUTTON, CHANGE_FOOD_WISHES_BUTTON],
         [CHANGE_BACK]
-    ],
-    one_time_keyboard=True
+    ]
 )
 
 answer_no = ["Нет"]
-answer_no_keyboard = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
-
-# markup_answer_no = ReplyKeyboardMarkup([answer_no], one_time_keyboard=True)
+answer_no_keyboard = ReplyKeyboardMarkup(
+    [answer_no]
+)
