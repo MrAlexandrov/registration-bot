@@ -30,7 +30,8 @@ change_data_keyboard = ReplyKeyboardMarkup(
         [CHANGE_GROUP_BUTTON, CHANGE_PHONE_NUBER_BUTTON],
         [CHANGE_EXPECTATIONS_BUTTON, CHANGE_FOOD_WISHES_BUTTON],
         [CHANGE_BACK]
-    ]
+    ],
+    one_time_keyboard=True
 )
 
 answer_no = ["Нет"]
