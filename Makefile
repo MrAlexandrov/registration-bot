@@ -1,6 +1,8 @@
 PROJECT_NAME = registration-bot
 IMAGE_NAME = $(PROJECT_NAME):latest
 CONTAINER_NAME = $(PROJECT_NAME)-container
+REPOSITORY_URL = https://github.com/MrAlexandrov/registration-bot.git
+DIRECTORY_NAME = registration-bot
 
 include .env
 export
@@ -46,12 +48,18 @@ docker-clean:
 connect:
 	ssh ${VM_USER}@${VM_IP_ADDRESS}
 
-# Deploy
+.PHONY: first-deploy
+first-deploy:
+	ssh ${VM_USER}@${VM_IP_ADDRESS} "git clone ${REPOSITORY_URL} || (cd ${DIRECTORY_NAME} && git pull)"
+	scp .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
+
 .PHONY: deploy
 deploy:
-	ssh ${VM_USER}@${VM_IP_ADDRESS} 'cd ~ && mkdir $(PROJECT_NAME) && cd $(PROJECT_NAME) && mkdir src'
-	scp -r src/*.py ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/src
-	scp -r .git start.sh .env credentials.json Makefile requirements.txt ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)
+	ssh ${VM_USER}@${VM_IP_ADDRESS} "cd ~/${DIRECTORY_NAME} && git pull"
+	ssh ${VM_USER}@${VM_IP_ADDRESS} "cd ~/${DIRECTORY_NAME} && rm .env credentails.json"
+	scp .env credentials.json ${VM_USER}@${VM_IP_ADDRESS}:~/$(PROJECT_NAME)/
+	# TODO: Обработать данные, которые есть
+
 
 # .PHONY: ci
 # ci: deploy
@@ -60,4 +68,4 @@ deploy:
 # 	echo "Running start.sh..."
 # 	ssh ${VM_USER}@${VM_IP_ADDRESS} 'bash start.sh'
 # 	echo "Creating new screen session..."
-# 	ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -dmS registration bash -c "cd ~ && make run"'
+# 	ssh ${VM_USER}@${VM_IP_ADDRESS} 'screen -dmS registration bash -c "cd ~/$(PROJECT_NAME) && make run"'
