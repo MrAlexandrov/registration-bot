@@ -215,3 +215,16 @@ class CombinedStorage(UserStorage):
     def close(self):
         if self.sqlite_storage:
             self.sqlite_storage.close()
+
+from settings import SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
+
+# TODO: Сделать различные хранилища опциональными
+storage = CombinedStorage(
+    csv_file_name="users.csv",
+    credentials_file=GOOGLE_CREDENTIALS_FILE,
+    spreadsheet_id=SPREADSHEET_ID,
+    fieldnames=FIELDNAMES,
+    debug_mode=False,
+    use_sqlite=True,  # Включаем SQLite
+    sqlite_db_path="users.db"  # Путь к SQLite базе данных
+)

@@ -22,12 +22,11 @@ import re
 from logger import logger
 from keyboards import *
 from texts import *
-from settings import SPREADSHEET_ID, GOOGLE_CREDENTIALS_FILE, FIELDNAMES
-from storage import CombinedStorage
+from storage import storage
 from user import User
 from validators import validate_date, validate_group, validate_phone
 from settings import ADMIN_IDS
-
+from filters import check_registered_filter
 
 (WRITING_FULL_NAME, WRITING_BIRTH_DATE, WRITING_GROUP,
  WRITING_PHONE_NUMBER, WRITING_EXPECTATIONS, WRITING_FOOD_WISHES,
@@ -35,18 +34,6 @@ from settings import ADMIN_IDS
 
 DB_FILE_PATH = 'users.db'
 EXCEL_FILE_PATH = 'users.xlsx'
-
-
-# TODO: Сделать различные хранилища опциональными
-storage = CombinedStorage(
-    csv_file_name="users.csv",
-    credentials_file=GOOGLE_CREDENTIALS_FILE,
-    spreadsheet_id=SPREADSHEET_ID,
-    fieldnames=FIELDNAMES,
-    debug_mode=False,
-    use_sqlite=True,  # Включаем SQLite
-    sqlite_db_path="users.db"  # Путь к SQLite базе данных
-)
 
 
 def save_user_data(context):
@@ -93,6 +80,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(TEXT_HELLO)
     if storage.get_user(user_id=user_id) is None and context.user_data.get("registered") is None:
+        if storage.get_user(user_id=user_id) is None:
+            await update.message.reply_text(TEXT_NO_NEW_REGISTRATION)
+            return
         context.user_data["timestamp"] = str(datetime.now())
         await update.message.reply_text(TEXT_ASK_FIO_FIRST_TIME, reply_markup=ReplyKeyboardRemove())
         return WRITING_FULL_NAME
