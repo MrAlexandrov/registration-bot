@@ -13,6 +13,7 @@ from telegram.ext import (
     MessageHandler,
     PicklePersistence,
     filters,
+    CallbackQueryHandler,
 )
 from logger import logger
 from settings import BOT_TOKEN
@@ -20,6 +21,7 @@ from filters import check_admin_filter, check_root_filter
 from handle_registration import send_db, send_excel, conv_handler, help,\
 add_admin, delete_admin
 from handle_send_message import send_message
+from handle_ask_again import ask_again, button_handler
 
 
 def main() -> None:
@@ -34,7 +36,9 @@ def main() -> None:
     application.add_handler(CommandHandler('add_admin',     add_admin,      filters=check_root_filter))
     application.add_handler(CommandHandler('delete_admin',  delete_admin,   filters=check_root_filter))
 
-    application.add_handler(CommandHandler("send_message", send_message, filters=check_admin_filter))
+    application.add_handler(CommandHandler('send_message', send_message, filters=check_admin_filter))
+    application.add_handler(CommandHandler('ask_again', ask_again, filters=check_admin_filter))
+    application.add_handler(CallbackQueryHandler(button_handler))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 

@@ -39,3 +39,6 @@ if ROOT_ID is None:
     raise ValueError("ROOT_ID не найден")
 
 ADMIN_IDS = []
+
+AGREED_USERS = [
+]

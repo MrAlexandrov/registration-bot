@@ -1,4 +1,4 @@
-from telegram import ReplyKeyboardMarkup, KeyboardButton
+from telegram import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 
 ABOUT_TRIP = "O выезде"
 WHAT_TO_TAKE = "Что взять?"
@@ -38,3 +38,12 @@ answer_no = ["Нет"]
 answer_no_keyboard = ReplyKeyboardMarkup(
     [answer_no]
 )
+
+yes_no = [
+    [
+        InlineKeyboardButton("Да", callback_data='yes'),
+        InlineKeyboardButton("Нет", callback_data='no')
+    ]
+]
+
+yes_no_keyboard = InlineKeyboardMarkup(yes_no)
