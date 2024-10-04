@@ -6,13 +6,14 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from settings import AGREED_USERS
+from settings import AGREED_USERS, ROOT_ID
 from keyboards import yes_no_keyboard
+from texts import TEXT_ASK_AGREEMENT_AGAIN
 
 async def ask_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for user_id in AGREED_USERS:
         try:
-            await context.bot.send_message(chat_id=user_id, text="И в последний раз узнаю, точно ли ты поедешь на Пионерский выезд? (Если что, пока тестирую на зареганых оргах, тыкни что-нибудь)", reply_markup=yes_no_keyboard)
+            await context.bot.send_message(chat_id=user_id, text=TEXT_ASK_AGREEMENT_AGAIN, reply_markup=yes_no_keyboard)
         except Exception as e:
             print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
@@ -38,6 +39,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif callback_data == 'no':
         answer = 'Нет'
         await context.bot.send_message(chat_id=user_id, text="Хорошо, спасибо за ответ!")
+        await context.bot.send_message(chat_id=ROOT_ID, text=f"Пользователь с id = {user_id} отказался ехать на выезд")
     else:
         return  # Если неизвестное значение, ничего не делаем
 
@@ -47,4 +49,4 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_answer(user_id, answer)
 
     # Уведомляем пользователя, что его ответ сохранен
-    await query.edit_message_text(text=f"Ваш ответ: {answer}")
+    await query.edit_message_text(text=f"Я записал, твой ответ: {answer}")

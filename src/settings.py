@@ -12,7 +12,7 @@ load_dotenv()
 BOT_TOKEN = getenv('RELEASE_BOT_TOKEN')
 SPREADSHEET_ID = getenv('RELEASE_SPREADSHEET_ID')
 GOOGLE_CREDENTIALS_FILE = getenv('RELEASE_GOOGLE_CREDENTIALS_FILE')
-ROOT_ID = getenv('ROOT_ID')
+ROOT_ID = int(getenv('ROOT_ID'))
 
 FIELDNAMES = [
     "user_id", 
@@ -40,5 +40,6 @@ if ROOT_ID is None:
 
 ADMIN_IDS = []
 
-AGREED_USERS = [
-]
+AGREED_USERS = []
+
+CANT_RIDE_USERS = []
