@@ -19,6 +19,7 @@ from settings import BOT_TOKEN
 from filters import check_admin_filter, check_root_filter
 from handle_registration import send_db, send_excel, conv_handler, help,\
 add_admin, delete_admin
+from handle_send_message import send_message
 
 
 def main() -> None:
@@ -26,12 +27,14 @@ def main() -> None:
     application = Application.builder().token(BOT_TOKEN).persistence(persistence).build()
 
     application.add_handler(conv_handler)
-    application.add_handler(CommandHandler("help", help))
+    application.add_handler(CommandHandler('help', help))
 
-    application.add_handler(CommandHandler("send_db",       send_db,        filters=check_admin_filter))
+    application.add_handler(CommandHandler('send_db',       send_db,        filters=check_admin_filter))
     application.add_handler(CommandHandler('send_excel',    send_excel,     filters=check_admin_filter))
     application.add_handler(CommandHandler('add_admin',     add_admin,      filters=check_root_filter))
     application.add_handler(CommandHandler('delete_admin',  delete_admin,   filters=check_root_filter))
+
+    application.add_handler(CommandHandler("send_message", send_message, filters=check_admin_filter))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
