@@ -6,11 +6,15 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+import asyncio
 from settings import AGREED_USERS, ROOT_ID
 from keyboards import yes_no_keyboard
 from texts import TEXT_ASK_AGREEMENT_AGAIN, TEXT_AGREE_TO_RIDE
 
 async def ask_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Задержка на 9 часов
+    await asyncio.sleep(9 * 60 * 60)
+
     for user_id in AGREED_USERS:
         try:
             await context.bot.send_message(
@@ -37,6 +41,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     callback_data = query.data
     user_id = query.from_user.id
 
+    await query.edit_message_reply_markup(reply_markup=None)
+
     # Определяем ответ пользователя
     if callback_data == 'yes':
         answer = 'Да'
@@ -49,11 +55,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif callback_data == 'no':
         answer = 'Нет'
         await context.bot.send_message(chat_id=user_id, text="Хорошо, спасибо за ответ!")
-        await context.bot.send_message(chat_id=ROOT_ID, text=f"Пользователь с id = {user_id} отказался ехать на выезд")
+        await context.bot.send_message(
+            chat_id=ROOT_ID, 
+            text=f"Пользователь с id = <code>{user_id}</code> отказался ехать на выезд",
+            parse_mode='HTML'
+        )
     else:
         return  # Если неизвестное значение, ничего не делаем
 
-    await query.edit_message_reply_markup(reply_markup=None)
 
     # Сохраняем информацию об ответе в файл
     save_answer(user_id, answer)
