@@ -81,7 +81,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(TEXT_HELLO)
     if storage.get_user(user_id=user_id) is None and context.user_data.get("registered") is None:
         if storage.get_user(user_id=user_id) is None:
-            await update.message.reply_text(TEXT_NO_NEW_REGISTRATION)
+            await update.message.reply_text(
+                TEXT_NO_NEW_REGISTRATION,
+                parse_mode='HTML',
+                disable_web_page_preview=True
+            )
             return
         context.user_data["timestamp"] = str(datetime.now())
         await update.message.reply_text(TEXT_ASK_FIO_FIRST_TIME, reply_markup=ReplyKeyboardRemove())

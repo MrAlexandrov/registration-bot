@@ -43,7 +43,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user_id, 
             text=TEXT_AGREE_TO_RIDE,
-            parse_mode='HTML'
+            parse_mode='HTML',
+            disable_web_page_preview=True
         )
     elif callback_data == 'no':
         answer = 'Нет'
