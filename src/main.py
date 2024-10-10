@@ -24,6 +24,7 @@ from handle_send_message import send_message
 from handle_ask_again import ask_again, button_handler
 from handle_send_cant_ride import send_cant_ride
 from handle_send_cant_ride_missed import send_cant_ride_missed
+from handle_send_message_all_riders import send_message_all_riders
 
 
 def main() -> None:
@@ -45,6 +46,8 @@ def main() -> None:
 
     application.add_handler(CommandHandler('send_cant_ride',    send_cant_ride,     filters=check_admin_filter))
     application.add_handler(CommandHandler('send_cant_ride_missed', send_cant_ride_missed, filters=check_admin_filter))
+
+    application.add_handler(CommandHandler('send_message_all_riders', send_message_all_riders, filters=check_admin_filter))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
