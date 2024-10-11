@@ -9,17 +9,14 @@ from telegram.ext import (
 import asyncio
 from settings import AGREED_USERS, ROOT_ID
 from keyboards import yes_no_keyboard
-from texts import TEXT_ASK_AGREEMENT_AGAIN, TEXT_AGREE_TO_RIDE
+from texts import TEXT_ARE_YOU_READY
 
 async def ask_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Задержка на 9 часов
-    await asyncio.sleep(9 * 60 * 60)
-
     for user_id in AGREED_USERS:
         try:
             await context.bot.send_message(
                 chat_id=user_id, 
-                text=TEXT_ASK_AGREEMENT_AGAIN, 
+                text=TEXT_ARE_YOU_READY, 
                 parse_mode='HTML', 
                 reply_markup=yes_no_keyboard
             )
@@ -48,7 +45,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         answer = 'Да'
         await context.bot.send_message(
             chat_id=user_id, 
-            text=TEXT_AGREE_TO_RIDE,
+            text="Будем ждать! ❤️",
             parse_mode='HTML',
             disable_web_page_preview=True
         )
