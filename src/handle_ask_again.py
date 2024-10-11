@@ -7,12 +7,12 @@ from telegram.ext import (
     filters,
 )
 import asyncio
-from settings import AGREED_USERS, ROOT_ID
+from settings import ALL_RIDERS, ROOT_ID
 from keyboards import yes_no_keyboard
 from texts import TEXT_ARE_YOU_READY
 
 async def ask_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    for user_id in AGREED_USERS:
+    for user_id in ALL_RIDERS:
         try:
             await context.bot.send_message(
                 chat_id=user_id, 
@@ -23,7 +23,7 @@ async def ask_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
-    await update.message.reply_text(f"Сообщения успешно отправлены {len(AGREED_USERS)} пользователям.")
+    await update.message.reply_text(f"Сообщения успешно отправлены {len(ALL_RIDERS)} пользователям.")
 
 def save_answer(user_id: int, answer: str):
     # Открываем файл для записи (в режиме добавления)
