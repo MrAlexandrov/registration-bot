@@ -36,7 +36,7 @@ async def send_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user:
         await update.message.reply_text(f"Пользователь с id '{recipient_id}' не найден.")
         return
-    
+
     # Отправляем сообщение пользователю
     try:
         await context.bot.send_message(chat_id=recipient_id, text=message_text)

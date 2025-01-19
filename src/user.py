@@ -1,12 +1,12 @@
 class User:
     def __init__(
-        self, 
-        user_id, 
-        timestamp, 
-        username, 
+        self,
+        user_id,
+        timestamp,
+        username,
         full_name,
         birth_date,
-        study_group, 
+        study_group,
         phone_number,
         expectations,
         food_wishes

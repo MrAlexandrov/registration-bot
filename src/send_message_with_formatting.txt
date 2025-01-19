@@ -1,0 +1,72 @@
+from telegram.constants import ParseMode
+
+import re
+
+
+# Функция для экранирования символов в MarkdownV2
+def escape_markdown_v2(text: str) -> str:
+    # Экранируем специальные символы
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', text)
+
+# Функция для применения entities к тексту
+def apply_entities_to_text(text: str, entities) -> str:
+    result = ""
+    offset = 0
+    for entity in entities:
+        # Экранируем текст между предыдущим и текущим entities
+        if entity.offset > offset:
+            non_entity_text = text[offset:entity.offset]
+            escaped_non_entity_text = escape_markdown_v2(non_entity_text)
+            result += escaped_non_entity_text
+        
+        entity_type = entity.type
+        entity_text = text[entity.offset:entity.offset + entity.length]
+        escaped_text = escape_markdown_v2(entity_text)
+
+        if entity_type == "bold":
+            result += f"*{escaped_text}*"
+        elif entity_type == "italic":
+            result += f"_{escaped_text}_"
+        elif entity_type == "underline":
+            result += f"__{escaped_text}__"
+        elif entity_type == "strikethrough":
+            result += f"~{escaped_text}~"
+        elif entity_type == "code":
+            result += f"`{escaped_text}`"
+        elif entity_type == "pre":
+            result += f"```{escaped_text}```"
+        elif entity_type == "text_link":
+            url = entity.url
+            escaped_url = escape_markdown_v2(url)
+            result += f"[{escaped_text}]({escaped_url})"
+        else:
+            # Для других типов entities просто добавляем экранированный текст
+            result += escaped_text
+
+        offset = entity.offset + entity.length
+
+    # Экранируем и добавляем оставшийся текст после последнего entities
+    if offset < len(text):
+        remaining_text = text[offset:]
+        escaped_remaining_text = escape_markdown_v2(remaining_text)
+        result += escaped_remaining_text
+
+    return result
+
+# Функция для обработки входящих сообщений
+async def echo(update: Update, context) -> None:
+    # Получаем текст сообщения и entities
+    message_text = update.message.text
+    entities = update.message.entities or []
+
+    # Применяем entities к тексту
+    if entities:
+        formatted_text = apply_entities_to_text(message_text, entities)
+    else:
+        formatted_text = escape_markdown_v2(message_text)
+
+    # Отправляем сообщение обратно, сохраняя форматирование
+    await update.message.reply_text(
+        formatted_text,
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
