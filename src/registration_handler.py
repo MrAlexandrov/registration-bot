@@ -1,69 +1,92 @@
+from settings import FIELDS
 from telegram import Update
-from telegram.ext import CommandHandler, MessageHandler, CallbackContext, filters
-
-from user_storage import UserStorage
+from telegram.ext import CallbackContext
+from user_storage import user_storage
+from utils import normalize_phone
 
 class RegistrationFlow:
-    def __init__(self):
-        self.user_storage = UserStorage()
-        self.steps = ["name", "phone", "email", "age"]
+    def __init__(self, user_storage):
+        self.user_storage = user_storage
+        self.steps = [field["name"] for field in FIELDS]
 
-    async def start_registration(self, update: Update, context: CallbackContext):
-        """Запускает регистрацию с первого шага."""
+    async def start_registration(self, update, context):
+        """Начинает процесс регистрации."""
         user_id = update.message.from_user.id
-        user_data = self.user_storage.get_user(user_id)
+        user = self.user_storage.get_user(user_id)
 
-        if not user_data:
-            print(f"[DEBUG] Creating new user {user_id}")
-            self.user_storage.create_user(user_id)
-            await self.ask_question(update, context, "name")
+        if not user:
+            print(f"[DEBUG] Создание нового пользователя {user_id}")
+            self.user_storage.create_user(user_id, self.steps[0])
+            user = self.user_storage.get_user(user_id)
+
+        if user and user["state"] == "registered":
+            await context.bot.send_message(chat_id=user_id, text="✅ Вы уже зарегистрированы!")
+            return
+
+        current_state = user["state"]
+        print(f"[DEBUG] Текущее состояние пользователя {user_id}: {current_state}")
+        if current_state not in self.steps:
+            current_state = self.steps[0]
+
+        await self.ask_question(update, context, current_state)
+
+    async def handle_registration_step(self, update, context):
+        """Обрабатывает ввод пользователя на текущем шаге."""
+        user_id = update.message.from_user.id
+        user = self.user_storage.get_user(user_id)
+
+        if not user:
+            await context.bot.send_message(chat_id=user_id, text="Пожалуйста, начните с команды /start.")
+            return
+
+        current_state = user["state"]
+        print(f"[DEBUG] Выполняется шаг '{current_state}' для пользователя {user_id}")
+
+        # Найти текущий шаг и его валидатор
+        field = next((field for field in FIELDS if field["name"] == current_state), None)
+        if not field:
+            await context.bot.send_message(chat_id=user_id, text="Ошибка: не могу найти шаг регистрации.")
+            return
+
+        validator = field.get("validator")
+
+        # Проверить данные
+        if validator and not validator(update.message.text):
+            await context.bot.send_message(chat_id=user_id, text="Данные введены некорректно. Попробуйте ещё раз.")
+            await self.ask_question(update, context, current_state)
+            return
+
+        step_name = field.get("name")
+
+        # Сохранить данные, если валидатор прошёл
+        if step_name == "phone":
+            normalized_value = normalize_phone(update.message.text)
+            if not normalized_value:
+                await context.bot.send_message(chat_id=user_id, text="Введите корректный номер телефона.")
+                return
+            self.user_storage.update_user(user_id, step_name, normalized_value)
         else:
-            current_step = user_data["state"]
-            if current_step == "registered":
-                await update.message.reply_text("Вы уже зарегистрированы! ✅")
-            else:
-                await self.ask_question(update, context, current_step)
+            self.user_storage.update_user(user_id, step_name, update.message.text)
 
-    async def handle_response(self, update: Update, context: CallbackContext):
-        """Обрабатывает ответ пользователя и переходит к следующему шагу."""
-        user_id = update.message.from_user.id
-        user_data = self.user_storage.get_user(user_id)
-
-        if not user_data:
-            await update.message.reply_text("❌ Что-то пошло не так! Попробуйте /start")
-            return
-
-        current_step = user_data["state"]
-        if current_step == "registered":
-            await update.message.reply_text("Вы уже зарегистрированы! ✅")
-            return
-
-        # Сохраняем ответ пользователя
-        self.user_storage.update_user(user_id, current_step, update.message.text)
+        print(f"[DEBUG] Сохранён ответ '{update.message.text}' для шага '{current_state}'")
 
         # Переход к следующему шагу
-        next_step_index = self.steps.index(current_step) + 1
+        next_step_index = self.steps.index(current_state) + 1
         if next_step_index < len(self.steps):
-            next_step = self.steps[next_step_index]
-            self.user_storage.update_state(user_id, next_step)
-            await self.ask_question(update, context, next_step)
+            next_step_name = self.steps[next_step_index]
+            self.user_storage.update_state(user_id, next_step_name)
+            await self.ask_question(update, context, next_step_name)
         else:
-            # Регистрация завершена
+            print(f"[DEBUG] Регистрация завершена для пользователя {user_id}")
+            await context.bot.send_message(chat_id=user_id, text="✅ Регистрация завершена!")
             self.user_storage.update_state(user_id, "registered")
-            await update.message.reply_text("✅ Регистрация завершена! Спасибо!")
 
-    async def ask_question(self, update: Update, context: CallbackContext, step_name: str):
-        """Отправляет вопрос пользователю в зависимости от текущего этапа."""
-        questions = {
-            "name": "Как вас зовут?",
-            "phone": "Введите ваш телефон:",
-            "email": "Введите ваш email:",
-            "age": "Введите ваш возраст:"
-        }
-
-        if step_name in questions:
-            await update.message.reply_text(questions[step_name])
-
+    async def ask_question(self, update, context, step_name):
+        """Задаёт вопрос для текущего шага."""
+        user_id = update.message.from_user.id
+        question = next(field["question"] for field in FIELDS if field["name"] == step_name)
+        print(f"[DEBUG] Задаём вопрос '{question}' для пользователя {user_id}")
+        await context.bot.send_message(chat_id=user_id, text=question)
 
 # Инициализируем регистрацию
-registration_flow = RegistrationFlow()
+registration_flow = RegistrationFlow(user_storage)

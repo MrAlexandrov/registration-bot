@@ -29,3 +29,12 @@ if ROOT_ID is None:
     raise ValueError("ROOT_ID не найден")
 
 ADMIN_IDS = []
+
+from validators import validate_name, validate_phone, validate_email, validate_age
+
+FIELDS = [
+    {"name": "name", "type": "TEXT", "question": "Как вас зовут?", "validator": validate_name},
+    {"name": "phone", "type": "TEXT", "question": "Введите ваш номер телефона:", "validator": validate_phone},
+    {"name": "email", "type": "TEXT", "question": "Введите ваш email:", "validator": validate_email},
+    {"name": "age", "type": "INTEGER", "question": "Введите ваш возраст:", "validator": validate_age},
+]
