@@ -1,5 +1,5 @@
 import re
-from utils import normalize_phone
+from formatters import format_phone
 
 def validate_date(date):
     pattern = r'^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(19|20)\d{2}$'
@@ -10,7 +10,7 @@ def validate_group(group):
     return bool(re.match(pattern, group))
 
 def validate_phone(phone):
-    phone = normalize_phone(phone)
+    phone = format_phone(phone)
     # Проверяем, соответствует ли номер формату
     pattern = r'^(7|8)\d{10}$'
     return bool(re.match(pattern, phone))
