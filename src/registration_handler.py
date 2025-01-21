@@ -36,6 +36,7 @@ class RegistrationFlow:
 
         self.user_storage.update_state(user_id, state)
         message = self.get_state_message(config, user_id)
+        print(f"message = {message}")
         reply_markup = self.create_reply_markup(config)
 
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup)
@@ -134,12 +135,12 @@ class RegistrationFlow:
         message = config["message"]
         if config["name"] == "registered":
             user = self.user_storage.get_user(user_id)
-            return message.format(
-                name=user.get("name", "Не указано"),
-                phone=user.get("phone", "Не указано"),
-                email=user.get("email", "Не указано"),
-                birth_date=user.get("birth_date", "Не указано")
-            )
+
+            # Формируем словарь для подстановки значений
+            user_data = {field["name"]: user.get(field["name"], "Не указано") for field in FIELDS}
+
+            # Формируем и возвращаем сообщение с подставленными данными
+            return message.format(**user_data)
         return message
 
     def create_reply_markup(self, config):

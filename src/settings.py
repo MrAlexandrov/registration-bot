@@ -45,7 +45,7 @@ FIELDS = [
     {
         "name": "phone",
         "label": "Телефон",
-        "message": "А тепрерь напиши номер телефона",
+        "message": "А теперь напиши номер телефона",
         "validator": validate_phone,
         "formatter": format_phone,
         "type": "TEXT",
@@ -69,10 +69,21 @@ FIELDS = [
     },
 ]
 
+def generate_registration_message():
+    """Генерирует строку сообщения для состояния 'registered' на основе FIELDS."""
+    message = "Отлично! Вот, что я запомнил:\n"
+    
+    # Для каждого поля из FIELDS добавляем в сообщение строку с placeholder'ом без пробелов
+    for field in FIELDS:
+        label = field["label"]
+        message += f"{label}: {{{field['name']}}}\n"  # Убираем пробелы вокруг {field['name']}
+    
+    return message
+
 POST_REGISTRATION_STATES = [
     {
         "name" : "registered",
-        "message" : "Отлично! Если потребуется, можешь поменять данные",
+        "message" : generate_registration_message(),
         "buttons": ["Изменить данные"],  # Здесь можно добавить любые действия
     },
     {
