@@ -1,9 +1,17 @@
 import re
 
-def format_phone(phone):
+def format_phone_db(phone):
     # Удаляем все символы, кроме цифр
-    phone = re.sub(r'\D', '', phone)
+    phone = re.sub(r'\D', '', str(phone))
+
+    if phone.startswith("8"):
+        phone = "7" + phone[1:]
+
     return phone
+
+def format_phone_display(phone):
+    phone = format_phone_db(phone)
+    return '+' + phone
 
 def format_date(date):
     # Разбиваем дату на день, месяц и год
@@ -15,3 +23,6 @@ def format_date(date):
 
     # Возвращаем дату в формате dd.mm.yyyy
     return f"{day}.{month}.{year}"
+
+def format_probability_display(probability):
+    return str(probability) + "%"

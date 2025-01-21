@@ -1,65 +1,53 @@
 import pytest
 import os
-from validators import validate_group, validate_date, validate_phone
+from validators import (
+    validate_date,
+    validate_phone,
+    validate_email,
+    validate_probability
+)
 
+# Универсальная функция для загрузки тестовых данных
+def load_test_data(valid_filename, invalid_filename):
+    base_path = os.path.join(os.path.dirname(__file__), "data")
 
-# Универсальная функция для чтения данных из файла
-def read_data_from_file(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        data = [line.strip() for line in file if line.strip()]  # Убираем пустые строки
-    return data
+    def read_data(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            return [line.strip() for line in file if line.strip()]  # Убираем пустые строки
 
-# Универсальная функция для параметризации тестов
-def parametrize_data(file_path, expected_result):
-    data = read_data_from_file(file_path)
-    return [(item, expected_result) for item in data]
+    valid_data = [(item, True) for item in read_data(os.path.join(base_path, valid_filename))]
+    invalid_data = [(item, False) for item in read_data(os.path.join(base_path, invalid_filename))]
 
-# Пути к файлам с данными для групп
-valid_groups_file_path = os.path.join(os.path.dirname(__file__), './data/valid_groups.txt')
-invalid_groups_file_path = os.path.join(os.path.dirname(__file__), './data/invalid_groups.txt')
+    return valid_data + invalid_data  # Объединяем в один список
 
-# Получение данных для групп
-valid_groups_data = parametrize_data(valid_groups_file_path, True)
-invalid_groups_data = parametrize_data(invalid_groups_file_path, False)
+# ✅ Фикстура с путями к файлам (кеширует данные в pytest)
+@pytest.fixture(scope="module")
+def test_data():
+    return {
+        "dates": load_test_data("valid_dates.txt", "invalid_dates.txt"),
+        "phones": load_test_data("valid_phones.txt", "invalid_phones.txt"),
+        "emails": load_test_data("valid_emails.txt", "invalid_emails.txt"),
+        "probabilities": [
+            ("0", True), ("50", True), ("100", True),
+            ("-1", False), ("101", False), ("abc", False),
+        ],
+    }
 
-# Объединение всех данных для тестирования групп
-test_group_data = valid_groups_data + invalid_groups_data
-
-# Параметризация тестов для validate_group с использованием данных из файлов
-@pytest.mark.parametrize("group, expected", test_group_data)
-def test_validate_group(group, expected):
-    assert validate_group(group) == expected
-
-
-# Пути к файлам с данными для дат
-valid_dates_file_path = os.path.join(os.path.dirname(__file__), './data/valid_dates.txt')
-invalid_dates_file_path = os.path.join(os.path.dirname(__file__), './data/invalid_dates.txt')
-
-# Получение данных для дат
-valid_dates_data = parametrize_data(valid_dates_file_path, True)
-invalid_dates_data = parametrize_data(invalid_dates_file_path, False)
-
-# Объединение всех данных для тестирования дат
-test_date_data = valid_dates_data + invalid_dates_data
-
-# Параметризация тестов для validate_date с использованием данных из файлов
-@pytest.mark.parametrize("date, expected", test_date_data)
+@pytest.mark.parametrize("date, expected", load_test_data("valid_dates.txt", "invalid_dates.txt"))
 def test_validate_date(date, expected):
     assert validate_date(date) == expected
 
-
-# Пути к файлам с данными для телефонов
-valid_phones_file_path = os.path.join(os.path.dirname(__file__), './data/valid_phones.txt')
-invalid_phones_file_path = os.path.join(os.path.dirname(__file__), './data/invalid_phones.txt')
-
-# Получение данных для телефонов
-valid_phones_data = parametrize_data(valid_phones_file_path, True)
-invalid_phones_data = parametrize_data(invalid_phones_file_path, False)
-
-# Объединение всех данных для тестирования телефонов
-test_phone_data = valid_phones_data + invalid_phones_data
-
-# Параметризация тестов для validate_phone с использованием данных из файлов
-@pytest.mark.parametrize("phone, expected", test_phone_data)
+@pytest.mark.parametrize("phone, expected", load_test_data("valid_phones.txt", "invalid_phones.txt"))
 def test_validate_phone(phone, expected):
     assert validate_phone(phone) == expected
+
+@pytest.mark.parametrize("email, expected", load_test_data("valid_emails.txt", "invalid_emails.txt"))
+def test_validate_email(email, expected):
+    assert validate_email(email) == expected
+
+@pytest.mark.parametrize("probability, expected", [
+    ("0", True), ("50", True), ("100", True),
+    ("-1", False), ("101", False), ("abc", False),
+])
+def test_validate_probability(probability, expected):
+    assert validate_probability(probability) == expected

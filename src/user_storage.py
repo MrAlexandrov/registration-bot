@@ -3,8 +3,8 @@ from settings import FIELDS
 
 class UserStorage:
     def __init__(self, db_path="database.sqlite"):
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
-        self.cursor = self.conn.cursor()
+        self.connection = sqlite3.connect(db_path, check_same_thread=False)
+        self.cursor = self.connection.cursor()
         self._create_table()
 
     def _create_table(self):
@@ -19,7 +19,7 @@ class UserStorage:
         )
         """
         self.cursor.execute(sql_query)
-        self.conn.commit()
+        self.connection.commit()
 
     def create_user(self, user_id, initial_state="name"):
         """Создаёт нового пользователя с пустыми полями."""
@@ -29,17 +29,17 @@ class UserStorage:
             f"INSERT INTO users ({columns}) VALUES ({placeholders})",
             [user_id, initial_state] + [None] * len(FIELDS),
         )
-        self.conn.commit()
+        self.connection.commit()
 
     def update_user(self, user_id, field, value):
         """Обновляет одно поле пользователя."""
         self.cursor.execute(f"UPDATE users SET {field} = ? WHERE telegram_id = ?", (value, user_id))
-        self.conn.commit()
+        self.connection.commit()
 
     def update_state(self, user_id, state):
         """Обновляет состояние пользователя."""
         self.cursor.execute("UPDATE users SET state = ? WHERE telegram_id = ?", (state, user_id))
-        self.conn.commit()
+        self.connection.commit()
 
     def get_user(self, user_id):
         """Получает данные пользователя по Telegram ID."""

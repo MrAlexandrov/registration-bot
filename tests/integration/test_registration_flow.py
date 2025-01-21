@@ -10,7 +10,7 @@ from user_storage import user_storage
 def reset_user_storage():
     """Очищает базу данных перед каждым тестом."""
     user_storage.cursor.execute("DELETE FROM users")
-    user_storage.conn.commit()
+    user_storage.connection.commit()
 
 
 @pytest.fixture
@@ -41,14 +41,7 @@ def mock_context():
 
 def create_mock_message(chat, user, text=None, contact=None):
     """Создает новый объект Message вместо изменения текста в mock_update."""
-    return Message(
-        message_id=1,
-        date=None,
-        chat=chat,
-        from_user=user,
-        text=text,
-        contact=contact,
-    )
+    return MagicMock(spec=Message, chat=chat, from_user=user, text=text, contact=contact)
 
 
 @pytest.mark.asyncio
@@ -72,35 +65,23 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
     user_id = mock_user.id
     user_storage.create_user(user_id)
 
-    # Ввод имени
-    user_storage.update_state(user_id, "name")
-    mock_update = MagicMock(spec=Update)
-    mock_update.effective_user = mock_user
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="Иван")
+    test_data = {
+        "name": "Иван",
+        "phone": "71234567890",
+        "email": "test@example.com",
+        "birth_date": "10.03.2002",
+        "probability_first": "80",
+        "probability_second": "50",
+    }
 
-    await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["name"] == "Иван"
+    for field, value in test_data.items():
+        user_storage.update_state(user_id, field)
+        mock_update = MagicMock(spec=Update)
+        mock_update.effective_user = mock_user
+        mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
 
-    # Ввод телефона
-    user_storage.update_state(user_id, "phone")
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="71234567890")
-
-    await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["phone"] == "71234567890"
-
-    # Ввод email
-    user_storage.update_state(user_id, "email")
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="test@example.com")
-
-    await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["email"] == "test@example.com"
-
-    # Ввод возраста
-    user_storage.update_state(user_id, "birth_date")
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="10.03.2002")
-
-    await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["birth_date"] == "10.03.2002"
+        await registration_flow.handle_input(mock_update, mock_context)
+        assert user_storage.get_user(user_id)[field] == value
 
     assert user_storage.get_user(user_id)["state"] == "registered"
 
@@ -141,7 +122,7 @@ async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_conte
     user_storage.create_user(user_id)
     user_storage.update_state(user_id, "phone")
 
-    contact = Contact(phone_number="79998887766", user_id=user_id, first_name="TestUser")
+    contact = MagicMock(spec=Contact, phone_number="79998887766", user_id=user_id, first_name="TestUser")
     mock_update = MagicMock(spec=Update)
     mock_update.effective_user = mock_user
     mock_update.message = create_mock_message(mock_chat, mock_user, contact=contact)

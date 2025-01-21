@@ -87,27 +87,48 @@ class RegistrationFlow:
 
             await self.transition_state(update, context, f"edit_{field_config['name']}")
 
-    async def process_data_input(self, update, context, user_input, current_state):
-        """Обрабатывает ввод данных (включая валидацию и форматирование)."""
-        user_id = update.message.from_user.id
-        field_name = current_state.replace("edit_", "")
-        field_config = self.get_config_by_name(field_name)
+    def apply_db_formatter(self, field_name, value):
+        """Применяет форматтер для базы данных, если он указан в конфиге."""
+        field_config = next((f for f in FIELDS if f["name"] == field_name), None)
+        db_formatter = field_config.get("db_formatter")
+        return db_formatter(value) if db_formatter else value
+
+    async def process_data_input(self, update, context, user_input, field_name):
+        """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
+        user_id = update.effective_user.id
+
+        # Убираем edit_, чтобы найти конфиг в FIELDS
+        actual_field_name = field_name.replace("edit_", "")
+        field_config = next((f for f in FIELDS if f["name"] == actual_field_name), None)
 
         if not field_config:
-            print(f"[ERROR] Поле '{field_name}' не найдено.")
+            print(f"[ERROR] Поле '{actual_field_name}' не найдено.")
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
-        if "validator" in field_config and not field_config["validator"](user_input):
-            print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{field_name}'")
-            await context.bot.send_message(chat_id=user_id, text=f"Некорректное значение для {field_config['label']}. Попробуй снова.")
+        # Если поле требует номер телефона, получаем его из контакта
+        if field_config.get("request_contact") and update.message.contact:
+            user_input = update.message.contact.phone_number
+
+        # Валидация
+        if field_config.get("validator") and not field_config["validator"](user_input):
+            print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{actual_field_name}'")
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=f"Некорректное значение для {field_config['label']}. Попробуй снова."
+            )
             return
 
-        formatted_value = self.format_input(field_config, user_input)
-        self.user_storage.update_user(user_id, field_name, formatted_value)
-        print(f"[DEBUG] Сохранён ответ '{formatted_value}' для поля '{field_name}'")
+        # Форматирование для БД
+        formatted_db_value = self.apply_db_formatter(actual_field_name, user_input)
 
-        await self.transition_state(update, context, self.get_next_state(current_state))
+        # Сохранение в БД
+        self.user_storage.update_user(user_id, actual_field_name, formatted_db_value)
+        print(f"[DEBUG] Сохранено в БД: {actual_field_name} = {formatted_db_value}")
+
+        # Переход к следующему состоянию
+        next_state = "registered" if field_name.startswith("edit_") else self.get_next_state(field_name)
+        await self.transition_state(update, context, next_state)
 
     def get_next_state(self, current_state):
         """Определяет следующее состояние."""
@@ -130,23 +151,36 @@ class RegistrationFlow:
         """Форматирует данные, если у поля есть форматтер."""
         return field_config["formatter"](user_input) if "formatter" in field_config and callable(field_config["formatter"]) else user_input
 
+    def apply_display_formatter(self, field_name, value):
+        """Применяет форматтер для отображения, если он указан в конфиге."""
+        field_config = next((f for f in FIELDS if f["name"] == field_name), None)
+        display_formatter = field_config.get("display_formatter")
+        return display_formatter(value) if display_formatter else value
+
     def get_state_message(self, config, user_id):
-        """Формирует сообщение состояния, включая подстановку данных пользователя с форматированием Markdown."""
+        """Формирует сообщение состояния, включая подстановку данных пользователя."""
+        message = config["message"]
+
         if config["name"] == "registered":
             user = self.user_storage.get_user(user_id)
 
-            # Формируем словарь для подстановки значений
-            user_data = {field["name"]: f"`{user.get(field['name'], 'Не указано')}`" for field in FIELDS}
+            # Формируем словарь с отображением данных
+            user_data = {
+                field["name"]: field["display_formatter"](user.get(field["name"], "Не указано"))
+                if "display_formatter" in field and callable(field["display_formatter"])
+                else user.get(field["name"], "Не указано")
+                for field in FIELDS
+            }
 
-            # Создаём динамическое сообщение с разметкой Markdown
-            message = "*Отлично! Вот, что я запомнил:*\n"
-            message += "\n".join([f"*{field['label']}*: {{{field['name']}}}" for field in FIELDS])
+            print(f"user_data = {user_data}")  # Отладочный вывод
+            print(f"message перед форматированием: {message}")  # Проверяем, как выглядит шаблон перед подстановкой
 
-            # Подставляем данные
-            return message.format(**user_data)
+            formatted_message = message.format(**user_data)  # <-- Заменяем подстановки в тексте
+            print(f"message после форматирования: {formatted_message}")  # Проверяем, что получилось
 
-        return config["message"]
+            return formatted_message
 
+        return message
 
     def create_reply_markup(self, config):
         """Создает клавиатуру для состояния."""
