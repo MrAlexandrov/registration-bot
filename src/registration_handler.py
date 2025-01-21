@@ -2,7 +2,7 @@ from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardR
 from telegram.ext import CallbackContext
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES
-
+from telegram.constants import ParseMode
 
 class RegistrationFlow:
     def __init__(self, user_storage):
@@ -39,7 +39,7 @@ class RegistrationFlow:
         print(f"message = {message}")
         reply_markup = self.create_reply_markup(config)
 
-        await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
 
     async def handle_input(self, update, context):
         """Обрабатывает пользовательский ввод для всех состояний."""
@@ -131,17 +131,22 @@ class RegistrationFlow:
         return field_config["formatter"](user_input) if "formatter" in field_config and callable(field_config["formatter"]) else user_input
 
     def get_state_message(self, config, user_id):
-        """Формирует сообщение состояния, включая подстановку данных пользователя."""
-        message = config["message"]
+        """Формирует сообщение состояния, включая подстановку данных пользователя с форматированием Markdown."""
         if config["name"] == "registered":
             user = self.user_storage.get_user(user_id)
 
             # Формируем словарь для подстановки значений
-            user_data = {field["name"]: user.get(field["name"], "Не указано") for field in FIELDS}
+            user_data = {field["name"]: f"`{user.get(field['name'], 'Не указано')}`" for field in FIELDS}
 
-            # Формируем и возвращаем сообщение с подставленными данными
+            # Создаём динамическое сообщение с разметкой Markdown
+            message = "*Отлично! Вот, что я запомнил:*\n"
+            message += "\n".join([f"*{field['label']}*: {{{field['name']}}}" for field in FIELDS])
+
+            # Подставляем данные
             return message.format(**user_data)
-        return message
+
+        return config["message"]
+
 
     def create_reply_markup(self, config):
         """Создает клавиатуру для состояния."""

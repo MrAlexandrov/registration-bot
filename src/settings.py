@@ -76,7 +76,7 @@ def generate_registration_message():
     # Для каждого поля из FIELDS добавляем в сообщение строку с placeholder'ом без пробелов
     for field in FIELDS:
         label = field["label"]
-        message += f"{label}: {{{field['name']}}}\n"  # Убираем пробелы вокруг {field['name']}
+        message += f"{label}: `{{{{field['name']}}}}`\n"  # Убираем пробелы вокруг {field['name']}
     
     return message
 
