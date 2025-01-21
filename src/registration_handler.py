@@ -42,7 +42,7 @@ class RegistrationFlow:
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
-        print(f"[DEBUG] Задаём вопрос '{field_config['question']}' для пользователя {user_id}")
+        print(f"[DEBUG] Задаём вопрос '{field_config['message']}' для пользователя {user_id}")
         self.user_storage.update_state(user_id, state)
 
         reply_markup = (
@@ -52,7 +52,7 @@ class RegistrationFlow:
             ) if field_config.get("request_contact") else ReplyKeyboardRemove()
         )
 
-        await context.bot.send_message(chat_id=user_id, text=field_config["question"], reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=user_id, text=field_config["message"], reply_markup=reply_markup)
 
     async def handle_post_registration_state(self, update, context, state):
         """Обрабатывает состояния после регистрации (например, редактирование)."""

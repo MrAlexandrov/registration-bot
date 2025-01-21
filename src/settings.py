@@ -37,7 +37,7 @@ FIELDS = [
     {
         "name": "name",
         "label": "Имя",
-        "question": "Как вас зовут?",
+        "message": "Как вас зовут?",
         "validator": validate_name,
         "formatter": None,
         "type": "TEXT",
@@ -45,7 +45,7 @@ FIELDS = [
     {
         "name": "phone",
         "label": "Телефон",
-        "question": "Введите ваш номер телефона:",
+        "message": "Введите ваш номер телефона:",
         "validator": validate_phone,
         "formatter": format_phone,
         "type": "TEXT",
@@ -54,7 +54,7 @@ FIELDS = [
     {
         "name": "email",
         "label": "Email",
-        "question": "Введите ваш email:",
+        "message": "Введите ваш email:",
         "validator": validate_email,
         "formatter": None,
         "type": "TEXT",
@@ -62,7 +62,7 @@ FIELDS = [
     {
         "name": "age",
         "label": "Возраст",
-        "question": "Введите ваш возраст:",
+        "message": "Введите ваш возраст:",
         "validator": validate_age,
         "formatter": None,
         "type": "INTEGER",
