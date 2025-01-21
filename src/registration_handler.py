@@ -1,4 +1,4 @@
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from telegram.ext import CallbackContext
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES
@@ -19,61 +19,24 @@ class RegistrationFlow:
             self.user_storage.create_user(user_id)
             await self.transition_state(update, context, self.steps[0])
         else:
-            current_state = user["state"]
-            print(f"[DEBUG] Пользователь {user_id} уже существует в состоянии '{current_state}'")
-
-            if current_state == "registered":
-                # Если пользователь уже зарегистрирован, показываем меню
-                await self.transition_state(update, context, "registered")
-            else:
-                # Если пользователь в процессе регистрации, продолжаем с текущего состояния
-                await self.transition_state(update, context, current_state)
+            print(f"[DEBUG] Пользователь {user_id} уже существует в состоянии '{user['state']}'")
+            await self.transition_state(update, context, user["state"])
 
     async def transition_state(self, update, context, state):
-        """Переход в указанное состояние."""
+        """Общий метод перехода между состояниями."""
         user_id = update.message.from_user.id
         print(f"[DEBUG] Переход к состоянию '{state}' для пользователя {user_id}")
 
-        # Если состояние после регистрации
         if state in POST_REGISTRATION_STATES:
-            config = POST_REGISTRATION_STATES[state]
-            print(f"[DEBUG] Пользователь {user_id} переходит в состояние '{state}' после регистрации.")
-            self.user_storage.update_state(user_id, state)
+            await self.handle_post_registration_state(update, context, state)
+        else:
+            await self.handle_registration_state(update, context, state)
 
-            # Подставляем данные пользователя в сообщение
-            if state == "registered":
-                user = self.user_storage.get_user(user_id)
-                message = config["message"].format(
-                    name=user.get("name", "Не указано"),
-                    phone=user.get("phone", "Не указано"),
-                    email=user.get("email", "Не указано"),
-                    age=user.get("age", "Не указано")
-                )
-            else:
-                message = config["message"]
-
-            # Генерация кнопок
-            if "buttons" in config:
-                buttons = config["buttons"]
-                if callable(buttons):  # Если это функция
-                    buttons = buttons()
-
-                reply_markup = ReplyKeyboardMarkup(
-                    [[button] for button in buttons],
-                    resize_keyboard=True
-                )
-            else:
-                reply_markup = None
-
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=message,
-                reply_markup=reply_markup
-            )
-            return
-
-        # Обработка стандартных состояний регистрации
+    async def handle_registration_state(self, update, context, state):
+        """Обрабатывает состояния, связанные с регистрацией."""
+        user_id = update.message.from_user.id
         field_config = next((f for f in FIELDS if f["name"] == state), None)
+
         if not field_config:
             print(f"[ERROR] Состояние '{state}' не найдено.")
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
@@ -81,125 +44,118 @@ class RegistrationFlow:
 
         print(f"[DEBUG] Задаём вопрос '{field_config['question']}' для пользователя {user_id}")
         self.user_storage.update_state(user_id, state)
-        await context.bot.send_message(chat_id=user_id, text=field_config["question"])
+
+        reply_markup = (
+            ReplyKeyboardMarkup(
+                [[KeyboardButton(text="Поделиться номером", request_contact=True)]],
+                resize_keyboard=True
+            ) if field_config.get("request_contact") else ReplyKeyboardRemove()
+        )
+
+        await context.bot.send_message(chat_id=user_id, text=field_config["question"], reply_markup=reply_markup)
+
+    async def handle_post_registration_state(self, update, context, state):
+        """Обрабатывает состояния после регистрации (например, редактирование)."""
+        user_id = update.message.from_user.id
+        config = POST_REGISTRATION_STATES[state]
+        print(f"[DEBUG] Пользователь {user_id} переходит в состояние '{state}' после регистрации.")
+        self.user_storage.update_state(user_id, state)
+
+        if state == "registered":
+            user = self.user_storage.get_user(user_id)
+            message = config["message"].format(
+                name=user.get("name", "Не указано"),
+                phone=user.get("phone", "Не указано"),
+                email=user.get("email", "Не указано"),
+                age=user.get("age", "Не указано")
+            )
+        else:
+            message = config["message"]
+
+        buttons = config.get("buttons")
+        if callable(buttons):  
+            buttons = buttons()
+
+        reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else None
+
+        await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup)
 
     async def handle_input(self, update, context):
         """Обрабатывает пользовательский ввод."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
         current_state = user["state"]
-
-        # Лог текущего состояния
         print(f"[DEBUG] Пользователь {user_id} находится в состоянии '{current_state}'")
 
-        # Обработка состояния 'registered'
         if current_state == "registered":
-            user_input = update.message.text
-            config = POST_REGISTRATION_STATES.get(current_state)
+            await self.process_registered_input(update, context)
+        elif current_state == "edit":
+            await self.process_edit_input(update, context)
+        elif current_state.startswith("edit_") or current_state in self.steps:
+            await self.process_field_input(update, context, current_state)
+        else:
+            print(f"[ERROR] Некорректное текущее состояние '{current_state}' для пользователя {user_id}.")
+            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
 
-            if not config or "buttons" not in config:
-                print(f"[ERROR] Нет конфигурации для состояния 'registered' или кнопок.")
-                await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
-                return
+    async def process_field_input(self, update, context, current_state):
+        """Обрабатывает ввод данных в процессе регистрации и редактирования."""
+        user_id = update.message.from_user.id
+        field_name = current_state.replace("edit_", "")
+        field_config = next((f for f in FIELDS if f["name"] == field_name), None)
 
-            # Проверяем, какая кнопка была нажата
-            if user_input == "Изменить данные":
-                print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
-                await self.transition_state(update, context, "edit")
-                return
+        if not field_config:
+            print(f"[ERROR] Поле '{field_name}' не найдено.")
+            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
+            return
 
+        user_input = update.message.contact.phone_number if update.message.contact else update.message.text
+
+        if "validator" in field_config and not field_config["validator"](user_input):
+            print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{field_name}'")
+            await context.bot.send_message(chat_id=user_id, text=f"Некорректное значение для {field_config['label']}. Попробуй снова.")
+            return
+
+        formatted_value = field_config["formatter"](user_input) if "formatter" in field_config and callable(field_config["formatter"]) else user_input
+        self.user_storage.update_user(user_id, field_name, formatted_value)
+        print(f"[DEBUG] Сохранён ответ '{formatted_value}' для поля '{field_name}'")
+
+        next_state = "registered" if current_state.startswith("edit_") else (
+            self.steps[self.steps.index(current_state) + 1] if current_state != self.steps[-1] else "registered"
+        )
+
+        await self.transition_state(update, context, next_state)
+
+    async def process_registered_input(self, update, context):
+        """Обрабатывает ввод в состоянии 'registered'."""
+        user_id = update.message.from_user.id
+        user_input = update.message.text
+
+        if user_input == "Изменить данные":
+            print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
+            await self.transition_state(update, context, "edit")
+        else:
             print(f"[ERROR] Некорректный ввод '{user_input}' в состоянии 'registered'.")
             await context.bot.send_message(chat_id=user_id, text="Пожалуйста, выбери действие из предложенных.")
+
+    async def process_edit_input(self, update, context):
+        """Обрабатывает выбор поля для редактирования."""
+        user_id = update.message.from_user.id
+        field_label = update.message.text
+
+        if field_label == "Отмена":
+            print(f"[DEBUG] Пользователь {user_id} отменил редактирование.")
+            await self.transition_state(update, context, "registered")
             return
 
-        # Обработка состояния 'edit'
-        if current_state == "edit":
-            field_label = update.message.text
-            if field_label == "Отмена":
-                print(f"[DEBUG] Пользователь {user_id} отменил редактирование.")
-                await self.transition_state(update, context, "registered")
-                return
-
-            # Определяем следующее состояние
-            field_config = next((f for f in FIELDS if f["label"] == field_label), None)
-            if not field_config:
-                print(f"[ERROR] Поле с меткой '{field_label}' не найдено.")
-                await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
-                return
-
-            next_state = f"edit_{field_config['name']}"
-            print(f"[DEBUG] Переход к состоянию '{next_state}' для пользователя {user_id}")
-            await self.transition_state(update, context, next_state)
+        field_config = next((f for f in FIELDS if f["label"] == field_label), None)
+        if not field_config:
+            print(f"[ERROR] Поле с меткой '{field_label}' не найдено.")
+            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
-        # Обработка изменения конкретного поля
-        if current_state.startswith("edit_"):
-            field_name = current_state.replace("edit_", "")
-            field_config = next((f for f in FIELDS if f["name"] == field_name), None)
-            if not field_config:
-                print(f"[ERROR] Поле '{field_name}' не найдено.")
-                await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
-                return
-
-            user_input = update.message.text
-            if "validator" in field_config:
-                is_valid = field_config["validator"](user_input)
-                if not is_valid:
-                    print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{field_name}'")
-                    await context.bot.send_message(
-                        chat_id=user_id,
-                        text=f"Некорректное значение для {field_config['label']}. Попробуй снова."
-                    )
-                    return
-
-            # Форматируем и сохраняем данные
-            value = field_config["formatter"](user_input) if "formatter" in field_config and callable(
-                field_config["formatter"]) else user_input
-            self.user_storage.update_user(user_id, field_name, value)
-            print(f"[DEBUG] Сохранён ответ '{value}' для поля '{field_name}'")
-
-            # Возвращаемся в состояние 'registered'
-            next_state = POST_REGISTRATION_STATES[current_state]["next_state"]
-            await self.transition_state(update, context, next_state)
-            return
-
-        # Обработка стандартных состояний
-        if current_state in self.steps:
-            field_config = next((f for f in FIELDS if f["name"] == current_state), None)
-            if not field_config:
-                print(f"[ERROR] Поле '{current_state}' не найдено в FIELDS.")
-                await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
-                return
-
-            user_input = update.message.text
-            if "validator" in field_config:
-                is_valid = field_config["validator"](user_input)
-                if not is_valid:
-                    print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{current_state}'")
-                    await context.bot.send_message(
-                        chat_id=user_id,
-                        text=f"Некорректное значение для {field_config['label']}. Попробуй снова."
-                    )
-                    return
-
-            # Форматируем и сохраняем данные
-            value = field_config["formatter"](user_input) if "formatter" in field_config and callable(
-                field_config["formatter"]) else user_input
-            self.user_storage.update_user(user_id, current_state, value)
-            print(f"[DEBUG] Сохранён ответ '{value}' для поля '{current_state}'")
-
-            # Переход к следующему состоянию
-            next_index = self.steps.index(current_state) + 1
-            if next_index < len(self.steps):
-                next_state = self.steps[next_index]
-                await self.transition_state(update, context, next_state)
-            else:
-                await self.transition_state(update, context, "registered")
-            return
-
-        print(f"[ERROR] Некорректное текущее состояние '{current_state}' для пользователя {user_id}.")
-        await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
-
+        next_state = f"edit_{field_config['name']}"
+        print(f"[DEBUG] Переход к состоянию '{next_state}' для пользователя {user_id}")
+        await self.transition_state(update, context, next_state)
 
 # Инициализируем регистрацию
 registration_flow = RegistrationFlow(user_storage)
