@@ -37,7 +37,7 @@ FIELDS = [
     {
         "name": "name",
         "label": "Имя",
-        "message": "Напиши, пожалуйста, ФИО",
+        "message": "Давай знакомиться, напиши ФИО",
         "validator": validate_name,
         "formatter": None,
         "type": "TEXT",
@@ -45,7 +45,7 @@ FIELDS = [
     {
         "name": "phone",
         "label": "Телефон",
-        "message": "А теперь напиши номер телефона",
+        "message": "А теперь напиши номер телефона, или поделись им из Telegram",
         "validator": validate_phone,
         "formatter": format_phone,
         "type": "TEXT",
@@ -54,7 +54,7 @@ FIELDS = [
     {
         "name": "email",
         "label": "Email",
-        "message": "И email",
+        "message": "Теперь напиши свою email-почту",
         "validator": validate_email,
         "formatter": None,
         "type": "TEXT",
@@ -62,7 +62,7 @@ FIELDS = [
     {
         "name": "birth_date",
         "label": "Дата рождения",
-        "message": "И дату рождения",
+        "message": "А когда у тебя день рождения?",
         "validator": validate_date,
         "formatter": format_date,
         "type": "TEXT",
@@ -93,23 +93,23 @@ POST_REGISTRATION_STATES = [
     },
     {
         "name" : "edit_name",
-        "message": "Введи новое имя:",
+        "message": "Введи новое ФИО",
         "next_state": "registered",
     },
     {
         "name" : "edit_phone",
-        "message": "Введите новый номер телефона:",
+        "message": "Введи новый номер телефона",
         "next_state": "registered",
         "request_contact": True,
     },
     {
         "name" : "edit_email",
-        "message": "Введи новый email:",
+        "message": "Введи новый email",
         "next_state": "registered",
     },
     {
         "name" : "edit_birth_date",
-        "message": "Введи новую дату рождения:",
+        "message": "Введи новую дату рождения",
         "next_state": "registered",
     },
 ]
