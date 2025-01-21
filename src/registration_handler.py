@@ -33,7 +33,6 @@ class RegistrationFlow:
             await self.transition_state(update, context, user["state"])
 
     async def transition_state(self, update, context, state):
-        """Общий метод перехода между состояниями."""
         user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
         print(f"[DEBUG] Переход к состоянию '{state}' для пользователя {user_id}")
 
@@ -50,18 +49,23 @@ class RegistrationFlow:
         # Генерируем сообщение состояния
         message = self.get_state_message(config, user_id)
 
-        # Создаем клавиатуру
         if "options" in config:
-            reply_markup = InlineKeyboardMarkup(self.create_inline_keyboard(
+            reply_markup = self.create_inline_keyboard(
                 config["options"],
                 selected_options=[],
                 multi_select=config.get("multi_select", False)
-            ))
+            )
         elif "buttons" in config:
             buttons = config["buttons"]() if callable(config["buttons"]) else config["buttons"]
             reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
+        elif config.get("request_contact"):
+            reply_markup = ReplyKeyboardMarkup(
+                [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]],
+                resize_keyboard=True
+            )
         else:
             reply_markup = ReplyKeyboardRemove()
+
 
         print(f"[DEBUG] Отправка сообщения пользователю {user_id}: {message}")
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
@@ -378,11 +382,12 @@ class RegistrationFlow:
             for opt in options
         ]
 
-        # Добавляем кнопку "Готово", если разрешен множественный выбор
+        # Формируем кнопки в две колонки
         keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
         if multi_select:
             keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
-        return keyboard
+
+        return InlineKeyboardMarkup(keyboard)  # Возвращаем объект InlineKeyboardMarkup
 
 
 # Инициализируем регистрацию
