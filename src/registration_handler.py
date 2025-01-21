@@ -76,7 +76,7 @@ class RegistrationFlow:
         if callable(buttons):  
             buttons = buttons()
 
-        reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else None
+        reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else ReplyKeyboardRemove()
 
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup)
 

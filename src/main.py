@@ -21,6 +21,7 @@ def main():
 
     # Пользовательский ввод
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.add_handler(MessageHandler(filters.CONTACT, handle_message))
 
     print("Bot started successfully!")
     application.run_polling()

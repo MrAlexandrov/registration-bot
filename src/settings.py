@@ -49,6 +49,7 @@ FIELDS = [
         "validator": validate_phone,
         "formatter": format_phone,
         "type": "TEXT",
+        "request_contact": True
     },
     {
         "name": "email",
@@ -83,7 +84,8 @@ POST_REGISTRATION_STATES = {
     },
     "edit_phone": {
         "message": "Введите новый номер телефона:",
-        "next_state": "registered"
+        "next_state": "registered",
+        "request_contact": True
     },
     "edit_email": {
         "message": "Введите новый email:",
