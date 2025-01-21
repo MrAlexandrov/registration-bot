@@ -77,7 +77,17 @@ class RegistrationFlow:
         if callable(buttons):
             buttons = buttons()
 
-        reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else ReplyKeyboardRemove()
+        field_name = state.replace("edit_", "")
+        field_config = next((f for f in FIELDS if f["name"] == field_name), None)
+
+        reply_markup = ReplyKeyboardRemove()
+        if field_config and field_config.get("request_contact"):
+            reply_markup = ReplyKeyboardMarkup(
+                [[KeyboardButton(text="Поделиться номером", request_contact=True)]],
+                resize_keyboard=True
+            )
+        elif buttons:
+            reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
 
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup)
 
@@ -146,9 +156,6 @@ class RegistrationFlow:
             print(f"[DEBUG] Переход к состоянию '{next_state}' для пользователя {user_id}")
             await self.transition_state(update, context, next_state)
             return
-        
-        if current_state.startswith("edit_"):
-            await self.process_field_input(update, context, current_state)
 
         print(f"[ERROR] Некорректный ввод '{user_input}' в состоянии '{current_state}'.")
         await context.bot.send_message(chat_id=user_id, text="Пожалуйста, выбери действие из предложенных.")
