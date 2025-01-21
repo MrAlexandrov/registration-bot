@@ -59,7 +59,7 @@ FIELDS = [
     {
         "name":                 "birth_date",
         "label":                "Дата рождения",
-        "message":              "А когда у тебя день рождения?",
+        "message":              "Когда у тебя день рождения?",
         "validator":            validate_date,
         "db_formatter":         format_date,
         "display_formatter":    None,
@@ -68,7 +68,7 @@ FIELDS = [
     {
         "name":                 "phone",
         "label":                "Телефон",
-        "message":              "А теперь напиши номер телефона, или поделись им из Telegram",
+        "message":              "Напиши свой номер телефона",
         "validator":            validate_phone,
         "db_formatter":         format_phone_db,
         "display_formatter":    format_phone_display,
@@ -78,7 +78,7 @@ FIELDS = [
     {
         "name":                 "email",
         "label":                "Email",
-        "message":              "Теперь напиши свою email-почту",
+        "message":              "Напиши свою email-почту",
         "validator":            validate_email,
         "db_formatter":         None,
         "display_formatter":    None,
@@ -89,18 +89,22 @@ FIELDS = [
         "label":                "Желаемая должность",
         "message":              "На какой должности ты хочешь работать в лагере?",
         "validator":            None,
-        "db_formatter":         None,
-        "display_formatter":    None,
+        "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
+        "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
         "type":                 "TEXT",
+        "multi_select":         True,
+        "options":              ["Вожатый", "Подменка", "Физрук", "Кружковод", "Фотограф", "Радист"],
     },
     {
         "name":                 "desired_age",
         "label":                "Желаемый возраст",
         "message":              "С детьми какого возраста хочешь работать?",
         "validator":            None,
-        "db_formatter":         None,
-        "display_formatter":    None,
+        "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
+        "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
         "type":                 "TEXT",
+        "multi_select":         True,
+        "options":              ["1-9", "10-12", "12-14", "14-16"],
     },
     {
         "name":                 "probability_instructive",
@@ -110,6 +114,8 @@ FIELDS = [
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
+        "multi_select":         False,
+        "options":              ["0-25", "25-50", "50-75", "75-100"],
     },
     {
         "name":                 "probability_first",
@@ -119,6 +125,8 @@ FIELDS = [
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
+        "multi_select":         False,
+        "options":              ["0-25", "25-50", "50-75", "75-100"],
     },
     {
         "name":                 "probability_second",
@@ -128,6 +136,8 @@ FIELDS = [
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
+        "multi_select":         False,
+        "options":              ["0-25", "25-50", "50-75", "75-100"],
     },
     {
         "name":                 "university",
@@ -162,43 +172,51 @@ FIELDS = [
     {
         "name":                 "diplom",
         "label":                "Диплом",
-        "message":              "Напиши, есть ли у тебя диплом? (\"Есть\"/\"Нет\")",
+        "message":              "Напиши, есть ли у тебя диплом?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    None,
+        "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "formatter":            None,
         "type":                 "TEXT",
+        "multi_select": False,
+        "options": ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "rescheduling_session",
         "label":                "Нужен перенос сессии",
-        "message":              "Нужен ли тебе перенос сессии? (\"Да\"/\"Нет\")",
+        "message":              "Нужен ли тебе перенос сессии?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    None,
+        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
         "formatter":            None,
         "type":                 "TEXT",
+        "multi_select": False,
+        "options": ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "rescheduling_practice",
         "label":                "Нужен перенос практики",
-        "message":              "Нужен ли тебе перенос практики? (\"Да\"/\"Нет\")",
+        "message":              "Нужен ли тебе перенос практики?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    None,
+        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
         "formatter":            None,
         "type":                 "TEXT",
+        "multi_select": False,
+        "options": ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "medical_book",
         "label":                "Медицинская книжка",
-        "message":              "Есть ли у тебя медицинская книжка, она должна быть действительна по конец последнего рабочего дня на смене? (\"Да\"/\"Нет\")",
+        "message":              "Есть ли у тебя медицинская книжка, она должна быть действительна по конец последнего рабочего дня на смене?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    None,
+        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
         "formatter":            None,
         "type":                 "TEXT",
-    },   
+        "multi_select": False,
+        "options": ["Да", "Нет"],  # Возможные варианты
+    },
 ]
 
 def generate_registered_message():
@@ -219,86 +237,5 @@ POST_REGISTRATION_STATES = [
         "name":                 "edit",
         "message":              "Что хочешь изменить?",
         "buttons":              lambda: [field["label"] for field in FIELDS] + ["Отмена"],   
-    },
-    {
-        "name":                 "edit_name",
-        "message":              "Введи новое ФИО",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_birth_date",
-        "message":              "Введи новую дату рождения",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_phone",
-        "message":              "Введи новый номер телефона",
-        "next_state":           "registered",
-        "request_contact":      True,
-    },
-    {
-        "name":                 "edit_email",
-        "message":              "Введи новый email",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_position",
-        "message":              "На какой должности ты хочешь работать в лагере?",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_desired_age",
-        "message":              "С детьми какого возраста хочешь работать?",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_probability_instructive",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на Инструктив?",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_probability_first",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену?",
-        "next_state":           "registered",
-    },
-    {
-        "name":                 "edit_probability_second",
-        "message":              "С какой вероятностью ты сможешь поехать на 2 смену?",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_university",
-        "message":              "В каком университете ты учишься?",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_study_group",
-        "message":              "В какой группе ты учишься?",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_work",
-        "message":              "Напиши место работы (если нет, отправь \"Нет\")",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_diplom",
-        "message":              "Напиши, есть ли у тебя диплом? (\"Есть\"/\"Нет\")",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_rescheduling_session",
-        "message":              "Нужен ли тебе перенос сессии? (\"Да\"/\"Нет\")",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_rescheduling_practice",
-        "message":              "Нужен ли тебе перенос практики? (\"Да\"/\"Нет\")",
-        "next_state":           "registered",  
-    },
-    {
-        "name":                 "edit_medical_book",
-        "message":              "Есть ли у тебя медицинская книжка, она должна быть действительна по конец последнего рабочего дня на смене? (\"Да\"/\"Нет\")",
-        "next_state":           "registered",  
     },
 ]

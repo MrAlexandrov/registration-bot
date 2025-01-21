@@ -1,8 +1,17 @@
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from telegram import (
+    Update, 
+    ReplyKeyboardMarkup, 
+    KeyboardButton, 
+    ReplyKeyboardRemove, 
+    InlineKeyboardMarkup, 
+    InlineKeyboardButton,
+)
+import telegram
 from telegram.ext import CallbackContext
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES
 from telegram.constants import ParseMode
+
 
 class RegistrationFlow:
     def __init__(self, user_storage):
@@ -24,21 +33,37 @@ class RegistrationFlow:
             await self.transition_state(update, context, user["state"])
 
     async def transition_state(self, update, context, state):
-        """Общий метод перехода между состояниями (регистрация и редактирование)."""
-        user_id = update.message.from_user.id
+        """Общий метод перехода между состояниями."""
+        user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
         print(f"[DEBUG] Переход к состоянию '{state}' для пользователя {user_id}")
 
+        # Находим конфигурацию состояния
         config = self.get_config_by_name(state)
         if not config:
-            print(f"[ERROR] Состояние '{state}' не найдено.")
+            print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
+        # Сохраняем текущее состояние
         self.user_storage.update_state(user_id, state)
-        message = self.get_state_message(config, user_id)
-        print(f"message = {message}")
-        reply_markup = self.create_reply_markup(config)
 
+        # Генерируем сообщение состояния
+        message = self.get_state_message(config, user_id)
+
+        # Создаем клавиатуру
+        if "options" in config:
+            reply_markup = InlineKeyboardMarkup(self.create_inline_keyboard(
+                config["options"],
+                selected_options=[],
+                multi_select=config.get("multi_select", False)
+            ))
+        elif "buttons" in config:
+            buttons = config["buttons"]() if callable(config["buttons"]) else config["buttons"]
+            reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
+        else:
+            reply_markup = ReplyKeyboardRemove()
+
+        print(f"[DEBUG] Отправка сообщения пользователю {user_id}: {message}")
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
 
     async def handle_input(self, update, context):
@@ -68,6 +93,7 @@ class RegistrationFlow:
     async def process_action_input(self, update, context, user_input, current_state):
         """Обрабатывает кнопки в состояниях registered и edit."""
         user_id = update.message.from_user.id
+
         if current_state == "registered" and user_input == "Изменить данные":
             print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
             await self.transition_state(update, context, "edit")
@@ -106,42 +132,93 @@ class RegistrationFlow:
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
-        # Если поле требует номер телефона, получаем его из контакта
+        # Если поле предполагает выбор из кнопок
+        if field_config.get("options"):
+            selected_options = self.user_storage.get_user(user_id).get(actual_field_name, "")
+            selected_options = selected_options.split(", ") if selected_options else []
+            if user_input == "Готово":
+                if not selected_options:
+                    await context.bot.send_message(chat_id=user_id, text="Выберите хотя бы один вариант.")
+                    return
+                formatted_db_value = ", ".join(selected_options)
+                self.user_storage.update_user(user_id, actual_field_name, formatted_db_value)
+                next_state = self.get_next_state(field_name)
+                print(f"[DEBUG] Следующее состояние для пользователя {user_id}: {next_state}")
+                await self.transition_state(update, context, next_state)
+                return
+
+            # Обновляем выбор
+            if user_input in selected_options:
+                selected_options.remove(user_input)
+            else:
+                selected_options.append(user_input)
+
+            try:
+                # Перерисовываем клавиатуру
+                reply_markup = InlineKeyboardMarkup(
+                    self.create_inline_keyboard(field_config["options"], selected_options)
+                )
+                await context.bot.edit_message_reply_markup(
+                    chat_id=update.effective_chat.id,
+                    message_id=update.effective_message.message_id,
+                    reply_markup=reply_markup
+                )
+            except telegram.error.BadRequest as e:
+                print(f"[ERROR] Не удалось отредактировать сообщение: {e}")
+                # Уведомление пользователя или fallback действие
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="Произошла ошибка при обновлении клавиатуры. Попробуйте ещё раз."
+                )
+
+        # Если поле требует номер телефона
         if field_config.get("request_contact") and update.message.contact:
             user_input = update.message.contact.phone_number
 
-        # Валидация
+        # Проверяем валидатор, если указан
         if field_config.get("validator") and not field_config["validator"](user_input):
-            print(f"[DEBUG] Некорректное значение '{user_input}' для поля '{actual_field_name}'")
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=f"Некорректное значение для {field_config['label']}. Попробуй снова."
-            )
+            await context.bot.send_message(chat_id=user_id, text=f"Некорректное значение для {field_config['label']}. Попробуй снова.")
             return
 
-        # Форматирование для БД
+        # Форматируем и сохраняем данные
         formatted_db_value = self.apply_db_formatter(actual_field_name, user_input)
-
-        # Сохранение в БД
         self.user_storage.update_user(user_id, actual_field_name, formatted_db_value)
-        print(f"[DEBUG] Сохранено в БД: {actual_field_name} = {formatted_db_value}")
 
         # Переход к следующему состоянию
-        next_state = "registered" if field_name.startswith("edit_") else self.get_next_state(field_name)
+        next_state = self.get_next_state(field_name)
         await self.transition_state(update, context, next_state)
 
     def get_next_state(self, current_state):
-        """Определяет следующее состояние."""
+        actual_state = current_state.replace("edit_", "")
+
         if current_state.startswith("edit_"):
-            return "registered"
-        elif current_state in self.steps and current_state != self.steps[-1]:
-            return self.steps[self.steps.index(current_state) + 1]
-        else:
-            return "registered"
+            return "registered"  # Возврат к registered после редактирования
+
+        if actual_state in self.steps:
+            current_index = self.steps.index(actual_state)
+            if current_index < len(self.steps) - 1:
+                return self.steps[current_index + 1]
+        return "registered"
 
     def get_config_by_name(self, state_name):
         """Возвращает конфигурацию состояния по имени."""
-        return next((f for f in FIELDS if f["name"] == state_name), None) or self.states_config.get(state_name)
+        print(f"[DEBUG] Поиск конфигурации для состояния '{state_name}'")
+
+        if state_name.startswith("edit_"):
+            original_field_name = state_name.replace("edit_", "")
+            config = next((f for f in FIELDS if f["name"] == original_field_name), None)
+            if config:
+                print(f"[DEBUG] Сгенерирована конфигурация для edit состояния: {config}")
+            else:
+                print(f"[ERROR] Конфигурация для edit состояния '{state_name}' не найдена.")
+            return config
+
+        config = next((f for f in FIELDS if f["name"] == state_name), None) or self.states_config.get(state_name)
+        if config:
+            print(f"[DEBUG] Найдена конфигурация для состояния '{state_name}': {config}")
+        else:
+            print(f"[ERROR] Конфигурация для состояния '{state_name}' не найдена.")
+        return config
 
     def get_config_by_label(self, label):
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
@@ -159,12 +236,13 @@ class RegistrationFlow:
 
     def get_state_message(self, config, user_id):
         """Формирует сообщение состояния, включая подстановку данных пользователя."""
-        message = config["message"]
+        print(f"[DEBUG] Формирование сообщения для состояния '{config['name']}'")
 
         if config["name"] == "registered":
             user = self.user_storage.get_user(user_id)
+            print(f"[DEBUG] Данные пользователя из базы: {user}")
 
-            # Формируем словарь с отображением данных
+            # Формируем словарь с данными пользователя
             user_data = {
                 field["name"]: field["display_formatter"](user.get(field["name"], "Не указано"))
                 if "display_formatter" in field and callable(field["display_formatter"])
@@ -172,31 +250,139 @@ class RegistrationFlow:
                 for field in FIELDS
             }
 
-            print(f"user_data = {user_data}")  # Отладочный вывод
-            print(f"message перед форматированием: {message}")  # Проверяем, как выглядит шаблон перед подстановкой
+            print(f"[DEBUG] Подготовленные данные для подстановки: {user_data}")
 
-            formatted_message = message.format(**user_data)  # <-- Заменяем подстановки в тексте
-            print(f"message после форматирования: {formatted_message}")  # Проверяем, что получилось
+            # Формируем сообщение с подстановкой данных
+            return config["message"].format(**user_data)
 
-            return formatted_message
+        # Возвращаем стандартное сообщение для других состояний
+        return config["message"]
 
-        return message
-
-    def create_reply_markup(self, config):
+    def create_reply_markup(self, config, selected_options=None):
         """Создает клавиатуру для состояния."""
+        if "options" in config:
+            return self.create_inline_keyboard(
+                config["options"],
+                selected_options=selected_options,
+                multi_select=config.get("multi_select", False),
+            )
         if "buttons" in config:
             buttons = self.create_buttons(config)
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else ReplyKeyboardRemove()
-
         if config.get("request_contact"):
             return ReplyKeyboardMarkup([[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]], resize_keyboard=True)
-
         return ReplyKeyboardRemove()
+
+    async def clear_inline_keyboard(self, update, context):
+        """Удаляет только инлайн-клавиатуру, оставляя текст сообщения."""
+        if update.callback_query:
+            await update.callback_query.edit_message_reply_markup(reply_markup=None)
+
+    async def handle_inline_query(self, update, context):
+        """Обрабатывает нажатия на инлайн-кнопки."""
+        query = update.callback_query
+        await query.answer()
+
+        # Получаем данные из callback_data
+        callback_data = query.data.split('|')
+        action = callback_data[0]  # select или done
+        option = callback_data[1] if len(callback_data) > 1 else None
+
+        user_id = query.from_user.id
+        user = self.user_storage.get_user(user_id)
+        current_state = user["state"]
+
+        # Преобразование edit_* в основное имя поля
+        actual_field_name = current_state.replace("edit_", "")
+
+        # Проверяем, является ли выбор одиночным или множественным
+        field_config = self.get_config_by_name(actual_field_name)
+        is_multi_select = field_config.get("multi_select", False)
+
+        if action == "select":
+            selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
+
+            if is_multi_select:
+                if option in selected_options:
+                    selected_options.remove(option)  # Убираем, если уже выбрано
+                else:
+                    selected_options.append(option)  # Добавляем, если не выбрано
+            else:
+                selected_options = [option]  # Для одиночного выбора заменяем на текущий выбор
+
+            # Обновляем выбранные значения в базе
+            self.user_storage.update_user(user_id, actual_field_name, ", ".join(selected_options))
+
+            # Формируем кнопки
+            buttons = [
+                InlineKeyboardButton(
+                    f"✅ {opt}" if opt in selected_options else opt,
+                    callback_data=f"select|{opt}"
+                )
+                for opt in field_config["options"]
+            ]
+
+            # Кнопки в две колонки
+            buttons = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+            buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
+            reply_markup = InlineKeyboardMarkup(buttons)
+
+            await query.edit_message_reply_markup(reply_markup=reply_markup)
+
+        elif action == "done":
+            # Удаляем только клавиатуру
+            await self.clear_inline_keyboard(update, context)
+
+            # Определяем следующее состояние
+            next_state = self.get_next_state(current_state)
+            print(f"[DEBUG] Переход к следующему состоянию: {next_state}")
+
+            # Переход к следующему состоянию
+            await self.transition_state(update, context, next_state)
+
 
     def create_buttons(self, config):
         """Создает список кнопок."""
         buttons = config.get("buttons")
         return buttons() if callable(buttons) else buttons
+
+    def get_config_by_name(self, state_name):
+        """Возвращает конфигурацию состояния по имени."""
+        print(f"[DEBUG] Поиск конфигурации для состояния '{state_name}'")
+
+        # Проверяем, является ли это edit_ состояние
+        if state_name.startswith("edit_"):
+            original_field_name = state_name.replace("edit_", "")
+            config = next((f for f in FIELDS if f["name"] == original_field_name), None)
+            if config:
+                print(f"[DEBUG] Сгенерирована конфигурация для edit состояния: {config}")
+            else:
+                print(f"[ERROR] Конфигурация для edit состояния '{state_name}' не найдена.")
+            return config
+
+        # Ищем конфигурацию в FIELDS или POST_REGISTRATION_STATES
+        config = next((f for f in FIELDS if f["name"] == state_name), None) or self.states_config.get(state_name)
+        if config:
+            print(f"[DEBUG] Найдена конфигурация для состояния '{state_name}': {config}")
+        else:
+            print(f"[ERROR] Конфигурация для состояния '{state_name}' не найдена.")
+        return config
+
+    def create_inline_keyboard(self, options, selected_options=None, multi_select=False):
+        selected_options = selected_options or []
+        buttons = [
+            InlineKeyboardButton(
+                f"✅ {opt}" if opt in selected_options else opt,
+                callback_data=f"select|{opt}"
+            )
+            for opt in options
+        ]
+
+        # Добавляем кнопку "Готово", если разрешен множественный выбор
+        keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+        if multi_select:
+            keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
+        return keyboard
 
 
 # Инициализируем регистрацию

@@ -1,6 +1,12 @@
 from registration_handler import registration_flow
 from settings import BOT_TOKEN
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application, 
+    CommandHandler, 
+    MessageHandler, 
+    filters,
+    CallbackQueryHandler,
+)
 
 
 async def start(update, context):
@@ -22,6 +28,7 @@ def main():
     # Пользовательский ввод
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.CONTACT, handle_message))
+    application.add_handler(CallbackQueryHandler(registration_flow.handle_inline_query))
 
     print("Bot started successfully!")
     application.run_polling()
