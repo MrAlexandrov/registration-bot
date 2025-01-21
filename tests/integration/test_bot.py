@@ -96,11 +96,11 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
     assert user_storage.get_user(user_id)["email"] == "test@example.com"
 
     # Ввод возраста
-    user_storage.update_state(user_id, "age")
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="25")
+    user_storage.update_state(user_id, "birth_date")
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="10.03.2002")
 
     await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["age"] == 25
+    assert user_storage.get_user(user_id)["birth_date"] == "10.03.2002"
 
     assert user_storage.get_user(user_id)["state"] == "registered"
 

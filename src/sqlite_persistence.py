@@ -2,12 +2,11 @@ from telegram.ext import BasePersistence
 import sqlite3
 from typing import DefaultDict, Dict, Any, Optional
 from collections import defaultdict
+from settings import FIELDS
 
 USER_FIELDS = {
-    "name": "TEXT",
-    "phone": "TEXT",
-    "email": "TEXT",
-    "age": "TEXT",
+    field["name"]: field["type"]
+    for field in FIELDS
 }
 
 class SqliteUserPersistence(BasePersistence):

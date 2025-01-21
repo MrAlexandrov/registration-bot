@@ -138,7 +138,7 @@ class RegistrationFlow:
                 name=user.get("name", "Не указано"),
                 phone=user.get("phone", "Не указано"),
                 email=user.get("email", "Не указано"),
-                age=user.get("age", "Не указано")
+                birth_date=user.get("birth_date", "Не указано")
             )
         return message
 

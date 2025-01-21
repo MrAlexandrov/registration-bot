@@ -30,14 +30,14 @@ if ROOT_ID is None:
 
 ADMIN_IDS = []
 
-from validators import validate_name, validate_phone, validate_email, validate_age
-from formatters import format_phone
+from validators import validate_name, validate_phone, validate_email, validate_age, validate_date
+from formatters import format_phone, format_date
 
 FIELDS = [
     {
         "name": "name",
         "label": "Имя",
-        "message": "Как вас зовут?",
+        "message": "Напиши, пожалуйста, ФИО",
         "validator": validate_name,
         "formatter": None,
         "type": "TEXT",
@@ -45,7 +45,7 @@ FIELDS = [
     {
         "name": "phone",
         "label": "Телефон",
-        "message": "Введите ваш номер телефона:",
+        "message": "А тепрерь напиши номер телефона",
         "validator": validate_phone,
         "formatter": format_phone,
         "type": "TEXT",
@@ -54,35 +54,35 @@ FIELDS = [
     {
         "name": "email",
         "label": "Email",
-        "message": "Введите ваш email:",
+        "message": "И email",
         "validator": validate_email,
         "formatter": None,
         "type": "TEXT",
     },
     {
-        "name": "age",
-        "label": "Возраст",
-        "message": "Введите ваш возраст:",
-        "validator": validate_age,
-        "formatter": None,
-        "type": "INTEGER",
+        "name": "birth_date",
+        "label": "Дата рождения",
+        "message": "И дату рождения",
+        "validator": validate_date,
+        "formatter": format_date,
+        "type": "TEXT",
     },
 ]
 
 POST_REGISTRATION_STATES = [
     {
         "name" : "registered",
-        "message" : "Вы успешно зарегистрированы! Выберите действие:",
+        "message" : "Отлично! Если потребуется, можешь поменять данные",
         "buttons": ["Изменить данные"],  # Здесь можно добавить любые действия
     },
     {
         "name" : "edit",
-        "message": "Что вы хотите изменить?",
+        "message": "Что хочешь изменить?",
         "buttons": lambda: [field["label"] for field in FIELDS] + ["Отмена"],   
     },
     {
         "name" : "edit_name",
-        "message": "Введите новое имя:",
+        "message": "Введи новое имя:",
         "next_state": "registered",
     },
     {
@@ -93,12 +93,12 @@ POST_REGISTRATION_STATES = [
     },
     {
         "name" : "edit_email",
-        "message": "Введите новый email:",
+        "message": "Введи новый email:",
         "next_state": "registered",
     },
     {
-        "name" : "edit_age",
-        "message": "Введите новый возраст:",
+        "name" : "edit_birth_date",
+        "message": "Введи новую дату рождения:",
         "next_state": "registered",
     },
 ]
