@@ -69,30 +69,36 @@ FIELDS = [
     },
 ]
 
-POST_REGISTRATION_STATES = {
-    "registered": {
-        "message": "Вы успешно зарегистрированы! Выберите действие:",
-        "buttons": ["Изменить данные"]  # Здесь можно добавить любые действия
+POST_REGISTRATION_STATES = [
+    {
+        "name" : "registered",
+        "message" : "Вы успешно зарегистрированы! Выберите действие:",
+        "buttons": ["Изменить данные"],  # Здесь можно добавить любые действия
     },
-    "edit": {
+    {
+        "name" : "edit",
         "message": "Что вы хотите изменить?",
-        "buttons": lambda: [field["label"] for field in FIELDS] + ["Отмена"]
+        "buttons": lambda: [field["label"] for field in FIELDS] + ["Отмена"],   
     },
-    "edit_name": {
+    {
+        "name" : "edit_name",
         "message": "Введите новое имя:",
-        "next_state": "registered"
+        "next_state": "registered",
     },
-    "edit_phone": {
+    {
+        "name" : "edit_phone",
         "message": "Введите новый номер телефона:",
         "next_state": "registered",
-        "request_contact": True
+        "request_contact": True,
     },
-    "edit_email": {
+    {
+        "name" : "edit_email",
         "message": "Введите новый email:",
-        "next_state": "registered"
+        "next_state": "registered",
     },
-    "edit_age": {
+    {
+        "name" : "edit_age",
         "message": "Введите новый возраст:",
-        "next_state": "registered"
-    }
-}
+        "next_state": "registered",
+    },
+]
