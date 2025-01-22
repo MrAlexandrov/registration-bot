@@ -386,13 +386,18 @@ class RegistrationFlow:
 
             # Кнопки в две колонки
             buttons = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-            if selected_options:
-                buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
+            buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
             reply_markup = InlineKeyboardMarkup(buttons)
 
-            await query.edit_message_reply_markup(reply_markup=reply_markup)
+            if query.message.reply_markup != reply_markup:
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
+            else:
+                print("[DEBUG] Reply markup is not modified, skipping edit_message_reply_markup call")
 
-        elif action == "done" and selected_options:
+        elif action == "done":
+            if not selected_options:
+                await context.bot.send_message(chat_id=user_id, text="Нужно что-то выбрать!")
+                return
             # Удаляем только клавиатуру
             await self.clear_inline_keyboard(update, context)
 
@@ -443,8 +448,7 @@ class RegistrationFlow:
 
         # Формируем кнопки в две колонки
         keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-        # if multi_select:
-        #     keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
+        keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
 
         return InlineKeyboardMarkup(keyboard)  # Возвращаем объект InlineKeyboardMarkup
 
