@@ -329,7 +329,7 @@ class RegistrationFlow:
             buttons = self.create_buttons(config)
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True) if buttons else ReplyKeyboardRemove()
         if config.get("request_contact"):
-            return ReplyKeyboardMarkup([[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]], resize_keyboard=True)
+            return ReplyKeyboardMarkup([[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]], resize_keyboard=True, one_time_keyboard=True)
         return ReplyKeyboardRemove()
 
     async def clear_inline_keyboard(self, update, context):
