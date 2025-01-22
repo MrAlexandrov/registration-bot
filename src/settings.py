@@ -10,18 +10,6 @@ BOT_TOKEN = getenv('TEST_BOT_TOKEN')
 # BOT_TOKEN = getenv('RELEASE_BOT_TOKEN')
 ROOT_ID = int(getenv('ROOT_ID'))
 
-FIELDNAMES = [
-    "user_id", 
-    "timestamp", 
-    "username", 
-    "full_name",
-    "birth_date",
-    "study_group", 
-    "phone_number", 
-    "expectations", 
-    "food_wishes"
-]
-
 if BOT_TOKEN is None:
     raise ValueError("Токен не найден! Убедитесь, что файл .env правильно настроен.")
 
@@ -49,7 +37,7 @@ FIELDS = [
     {
         "name":                 "name",
         "label":                "Имя",
-        "message":              "Давай знакомиться, напиши ФИО",
+        "message":              "Давай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
         "validator":            None,
         "db_formatter":         None,                               # Для БД
         "display_formatter":    None,                               # Для вывода
@@ -59,7 +47,7 @@ FIELDS = [
     {
         "name":                 "birth_date",
         "label":                "Дата рождения",
-        "message":              "Когда у тебя день рождения?",
+        "message":              "Когда у тебя день рождения? (в формате 10.03.2002)",
         "validator":            validate_date,
         "db_formatter":         format_date,
         "display_formatter":    None,
@@ -68,7 +56,7 @@ FIELDS = [
     {
         "name":                 "phone",
         "label":                "Телефон",
-        "message":              "Напиши свой номер телефона",
+        "message":              "Напиши свой номер телефона или поделись им из Telegram",
         "validator":            validate_phone,
         "db_formatter":         format_phone_db,
         "display_formatter":    format_phone_display,
@@ -78,7 +66,7 @@ FIELDS = [
     {
         "name":                 "email",
         "label":                "Email",
-        "message":              "Напиши свою email-почту",
+        "message":              "Напиши свою почту",
         "validator":            validate_email,
         "db_formatter":         None,
         "display_formatter":    None,
@@ -87,7 +75,7 @@ FIELDS = [
     {
         "name":                 "position",
         "label":                "Желаемая должность",
-        "message":              "На какой должности ты хочешь работать в лагере?",
+        "message":              "На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)",
         "validator":            None,
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
@@ -98,7 +86,7 @@ FIELDS = [
     {
         "name":                 "desired_age",
         "label":                "Желаемый возраст",
-        "message":              "С детьми какого возраста хочешь работать?",
+        "message":              "С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)",
         "validator":            None,
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
@@ -109,7 +97,7 @@ FIELDS = [
     {
         "name":                 "probability_instructive",
         "label":                "Вероятность поехать на Инструктив",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на Инструктив?",
+        "message":              "Напиши, с какой вероятностью ты сможешь поехать на Инструктив? (только один вариант)",
         "validator":            validate_probability,
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
@@ -120,7 +108,7 @@ FIELDS = [
     {
         "name":                 "probability_first",
         "label":                "Вероятность поехать на 1 смену",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену?",
+        "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену? (только один вариант)",
         "validator":            validate_probability,
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
@@ -131,7 +119,7 @@ FIELDS = [
     {
         "name":                 "probability_second",
         "label":                "Вероятность поехать на 2 смену",
-        "message":              "С какой вероятностью ты сможешь поехать на 2 смену?",
+        "message":              "С какой вероятностью ты сможешь поехать на 2 смену? (только один вариант)",
         "validator":            validate_probability,
         "db_formatter":         None,
         "display_formatter":    format_probability_display,
@@ -162,7 +150,7 @@ FIELDS = [
     {
         "name":                 "work",
         "label":                "Место работы",
-        "message":              "Напиши место работы (если нет, отправь \"Нет\")",
+        "message":              "Напиши место работы (если не работаешь, отправь Нет)",
         "validator":            None,
         "db_formatter":         None,
         "display_formatter":    None,
@@ -187,7 +175,7 @@ FIELDS = [
         "message":              "Нужен ли тебе перенос сессии?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
+        "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
@@ -199,7 +187,7 @@ FIELDS = [
         "message":              "Нужен ли тебе перенос практики?",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
+        "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
@@ -208,10 +196,10 @@ FIELDS = [
     {
         "name":                 "medical_book",
         "label":                "Медицинская книжка",
-        "message":              "Есть ли у тебя медицинская книжка, она должна быть действительна по конец последнего рабочего дня на смене?",
+        "message":              "Есть ли у тебя медицинская книжка? (она должна быть действительна по конец последнего рабочего дня на смене)",
         "validator":            None,
         "db_formatter":         None,
-        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
+        "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
