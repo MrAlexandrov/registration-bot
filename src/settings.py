@@ -33,15 +33,26 @@ from formatters import (
     format_probability_display,
 )
 
+# {
+#     "name":                 "name",
+#     "label":                "label",
+#     "message":              "message",
+#     "validator":            lambda x: len(x) > 0,
+#     "db_formatter":         None,                               # Для БД
+#     "display_formatter":    None,                               # Для вывода
+#     "formatter":            None,                               # ???
+#     "display_formatter":    None,
+#     "type":                 "TEXT",
+#     "request_contact":      True,
+#     "multi_select":         True,
+#     "options":              ["First", "Second"],
+# },
+
 FIELDS = [
     {
         "name":                 "name",
         "label":                "Имя",
         "message":              "Давай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
-        "validator":            lambda x: len(x) > 0,
-        "db_formatter":         None,                               # Для БД
-        "display_formatter":    None,                               # Для вывода
-        "formatter":            None,
         "type":                 "TEXT",
     },
     {
@@ -50,7 +61,6 @@ FIELDS = [
         "message":              "Когда у тебя день рождения? (в формате 10.03.2002)",
         "validator":            validate_date,
         "db_formatter":         format_date,
-        "display_formatter":    None,
         "type": "TEXT",
     },
     {
@@ -78,8 +88,6 @@ FIELDS = [
         "label":                "Email",
         "message":              "Напиши свою почту",
         "validator":            validate_email,
-        "db_formatter":         None,
-        "display_formatter":    None,
         "type":                 "TEXT",
     },
     {
@@ -97,19 +105,17 @@ FIELDS = [
         "name":                 "desired_age",
         "label":                "Желаемый возраст",
         "message":              "С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)",
-        "validator":            None,
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
         "type":                 "TEXT",
         "multi_select":         True,
-        "options":              ["1-9", "10-12", "12-14", "14-16"],
+        "options":              ["6-9", "10-12", "12-14", "14-16"],
     },
     {
         "name":                 "probability_instructive",
         "label":                "Вероятность поехать на Инструктив",
         "message":              "Напиши, с какой вероятностью ты сможешь поехать на Инструктив? (только один вариант)",
         "validator":            validate_probability,
-        "db_formatter":         None,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
         "multi_select":         False,
@@ -120,7 +126,7 @@ FIELDS = [
         "label":                "Вероятность поехать на 1 смену",
         "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену? (только один вариант)",
         "validator":            validate_probability,
-        "db_formatter":         None,
+
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
         "multi_select":         False,
@@ -131,20 +137,24 @@ FIELDS = [
         "label":                "Вероятность поехать на 2 смену",
         "message":              "С какой вероятностью ты сможешь поехать на 2 смену? (только один вариант)",
         "validator":            validate_probability,
-        "db_formatter":         None,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
         "multi_select":         False,
         "options":              ["0-25", "25-50", "50-75", "75-100"],
     },
     {
-        "name":                 "university",
-        "label":                "Университет",
-        "message":              "В каком университете ты учишься?",
+        "name":                 "education_choice",
+        "label":                "Место учёбы",
+        "message":              "Где ты учишься?",
         "validator":            lambda x: len(x) > 0,
-        "db_formatter":         None,
-        "display_formatter":    None,
-        "formatter":            None,
+        "type":                 "TEXT",
+        "multi_select":         False,
+        "options":              ["МГТУ им. Баумана", "Другое учебное заведение", "Закончил(а)", "Не учусь"],
+    },
+    {
+        "name":                 "other_education",
+        "label":                "Другое учебное заведение",
+        "message":              "Укажи название своего учебного заведения",
         "type":                 "TEXT",
     },
     {
@@ -152,29 +162,28 @@ FIELDS = [
         "label":                "Группа",
         "message":              "В какой группе ты учишься?",
         "validator":            lambda x: len(x) > 0,
-        "db_formatter":         None,
-        "display_formatter":    None,
-        "formatter":            None,
         "type":                 "TEXT",
     },
     {
         "name":                 "work",
+        "label":                "Работаешь",
+        "message":              "Работаешь ли ты?",
+        "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
+        "type":                 "TEXT",
+        "multi_select":         False,
+        "options":              ["Да", "Нет"],  # Возможные варианты
+    },
+    {
+        "name":                 "work_place",
         "label":                "Место работы",
-        "message":              "Напиши место работы (если не работаешь, отправь Нет)",
-        "validator":            lambda x: len(x) > 0,
-        "db_formatter":         None,
-        "display_formatter":    None,
-        "formatter":            None,
+        "message":              "Напиши, где именно ты работаешь",
         "type":                 "TEXT",
     },
     {
         "name":                 "diplom",
         "label":                "Диплом",
-        "message":              "Напиши, есть ли у тебя диплом?",
-        "validator":            None,
-        "db_formatter":         None,
+        "message":              "Есть ли у тебя диплом?",
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
-        "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
         "options": ["Да", "Нет"],  # Возможные варианты
@@ -183,10 +192,7 @@ FIELDS = [
         "name":                 "rescheduling_session",
         "label":                "Нужен перенос сессии",
         "message":              "Нужен ли тебе перенос сессии?",
-        "validator":            None,
-        "db_formatter":         None,
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
-        "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
         "options": ["Да", "Нет"],  # Возможные варианты
@@ -195,10 +201,7 @@ FIELDS = [
         "name":                 "rescheduling_practice",
         "label":                "Нужен перенос практики",
         "message":              "Нужен ли тебе перенос практики?",
-        "validator":            None,
-        "db_formatter":         None,
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
-        "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
         "options": ["Да", "Нет"],  # Возможные варианты
@@ -206,11 +209,8 @@ FIELDS = [
     {
         "name":                 "medical_book",
         "label":                "Медицинская книжка",
-        "message":              "Есть ли у тебя медицинская книжка? (она должна быть действительна по конец последнего рабочего дня на смене)",
-        "validator":            None,
-        "db_formatter":         None,
+        "message":              "Есть ли у тебя медицинская книжка?",
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
-        "formatter":            None,
         "type":                 "TEXT",
         "multi_select": False,
         "options": ["Да", "Нет"],  # Возможные варианты

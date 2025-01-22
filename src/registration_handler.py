@@ -52,6 +52,51 @@ class RegistrationFlow:
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return
+        
+        if state == "other_education":
+            user = self.user_storage.get_user(user_id)
+            if user["education_choice"] != "Другое учебное заведение":
+                self.user_storage.update_user(user_id, "other_education", "Нет")
+                # await context.bot.send_message(chat_id=user_id, text="Другое учебное заведение заполнять не нужно")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
+            
+        if state == "study_group":
+            user = self.user_storage.get_user(user_id)
+            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+                self.user_storage.update_user(user_id, "study_group", "Нет")
+                # await context.bot.send_message(chat_id=user_id, text="Учебную группу заполнять не нужно")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
+
+        if state == "rescheduling_session":
+            user = self.user_storage.get_user(user_id)
+            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+                self.user_storage.update_user(user_id, "rescheduling_session", "Нет")
+                # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос сессии заполнять не нужно")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
+
+        if state == "rescheduling_practice":
+            user = self.user_storage.get_user(user_id)
+            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+                self.user_storage.update_user(user_id, "rescheduling_practice", "Нет")
+                # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос практики заполнять не нужно")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
+
+        if state == "work_place":
+            user = self.user_storage.get_user(user_id)
+            if user["work"] == "Нет":
+                self.user_storage.update_user(user_id, "work_place", user["work"])
+                # await context.bot.send_message(chat_id=user_id, text="Место работы заполнять не нужно")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
 
         # Сохраняем текущее состояние
         self.user_storage.update_state(user_id, state)
