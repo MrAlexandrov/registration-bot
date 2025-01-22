@@ -34,6 +34,7 @@ class RegistrationFlow:
 
     async def transition_state(self, update, context, state):
         user_id = update.message.from_user.id if update.message else update.callback_query.from_user.id
+        user_data = self.user_storage.get_user(user_id)
         print(f"[DEBUG] Переход к состоянию '{state}' для пользователя {user_id}")
 
         # Находим конфигурацию состояния
@@ -52,10 +53,9 @@ class RegistrationFlow:
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return
-        
+
         if state == "other_education":
-            user = self.user_storage.get_user(user_id)
-            if user["education_choice"] != "Другое учебное заведение":
+            if user_data["education_choice"] != "Другое учебное заведение":
                 self.user_storage.update_user(user_id, "other_education", "Нет")
                 # await context.bot.send_message(chat_id=user_id, text="Другое учебное заведение заполнять не нужно")
                 next_state = self.get_next_state(state)
@@ -63,8 +63,7 @@ class RegistrationFlow:
                 return
             
         if state == "study_group":
-            user = self.user_storage.get_user(user_id)
-            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
                 self.user_storage.update_user(user_id, "study_group", "Нет")
                 # await context.bot.send_message(chat_id=user_id, text="Учебную группу заполнять не нужно")
                 next_state = self.get_next_state(state)
@@ -72,8 +71,7 @@ class RegistrationFlow:
                 return
 
         if state == "rescheduling_session":
-            user = self.user_storage.get_user(user_id)
-            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
                 self.user_storage.update_user(user_id, "rescheduling_session", "Нет")
                 # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос сессии заполнять не нужно")
                 next_state = self.get_next_state(state)
@@ -81,8 +79,7 @@ class RegistrationFlow:
                 return
 
         if state == "rescheduling_practice":
-            user = self.user_storage.get_user(user_id)
-            if user["education_choice"] == "Закончил(а)" or user["education_choice"] == "Не учусь":
+            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
                 self.user_storage.update_user(user_id, "rescheduling_practice", "Нет")
                 # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос практики заполнять не нужно")
                 next_state = self.get_next_state(state)
@@ -90,9 +87,8 @@ class RegistrationFlow:
                 return
 
         if state == "work_place":
-            user = self.user_storage.get_user(user_id)
-            if user["work"] == "Нет":
-                self.user_storage.update_user(user_id, "work_place", user["work"])
+            if user_data["work"] == "Нет":
+                self.user_storage.update_user(user_id, "work_place", user_data["work"])
                 # await context.bot.send_message(chat_id=user_id, text="Место работы заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
@@ -104,9 +100,9 @@ class RegistrationFlow:
         # Генерируем сообщение состояния
         message = self.get_state_message(config, user_id)
 
+        actual_field_name = state.replace("edit_", "")
         if "options" in config:
-            actual_field_name = state.replace("edit_", "")
-            selected_options = self.user_storage.get_user(user_id).get(actual_field_name, "")
+            selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
             reply_markup = self.create_inline_keyboard(
                 config["options"],
@@ -115,6 +111,14 @@ class RegistrationFlow:
             )
         elif "buttons" in config:
             buttons = config["buttons"]() if callable(config["buttons"]) else config["buttons"]
+
+            if state == "edit":
+                user_nickname = user_data.get("username", "")
+
+                # Убираем кнопку "Изменить ник", если ник уже установлен
+                if user_nickname:
+                    buttons = [button for button in buttons if button != "Никнейм"]
+
             reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
         elif config.get("request_contact"):
             reply_markup = ReplyKeyboardMarkup(
@@ -123,7 +127,6 @@ class RegistrationFlow:
             )
         else:
             reply_markup = ReplyKeyboardRemove()
-
 
         print(f"[DEBUG] Отправка сообщения пользователю {user_id}: {message}")
         await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
@@ -184,6 +187,7 @@ class RegistrationFlow:
     async def process_data_input(self, update, context, user_input, field_name):
         """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
         user_id = update.effective_user.id
+        user_data = self.user_storage.get_user(user_id)
 
         # Убираем edit_, чтобы найти конфиг в FIELDS
         actual_field_name = field_name.replace("edit_", "")
@@ -196,7 +200,7 @@ class RegistrationFlow:
 
         # Если поле предполагает выбор из кнопок
         if field_config.get("options"):
-            selected_options = self.user_storage.get_user(user_id).get(actual_field_name, "")
+            selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
             if user_input == "Готово":
                 if not selected_options:
@@ -373,6 +377,9 @@ class RegistrationFlow:
                 selected_options = [option]  # Для одиночного выбора заменяем на текущий выбор
                 # Удаляем только клавиатуру
                 await self.clear_inline_keyboard(update, context)
+
+                # Обновляем выбранные значения в базе
+                self.user_storage.update_user(user_id, actual_field_name, ", ".join(selected_options))
 
                 # Определяем следующее состояние
                 next_state = self.get_next_state(current_state)
