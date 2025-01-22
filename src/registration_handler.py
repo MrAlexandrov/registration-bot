@@ -42,6 +42,16 @@ class RegistrationFlow:
             print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
+        
+        # Если это состояние для сбора никнейма, обработать его сразу
+        if state == "username":
+            username = update.message.from_user.username
+            if username:  # Ник есть в Telegram
+                self.user_storage.update_user(user_id, "username", username)
+                await context.bot.send_message(chat_id=user_id, text=f"Твой ник @{username} сохранен автоматически.")
+                next_state = self.get_next_state(state)
+                await self.transition_state(update, context, next_state)
+                return
 
         # Сохраняем текущее состояние
         self.user_storage.update_state(user_id, state)

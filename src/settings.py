@@ -38,7 +38,7 @@ FIELDS = [
         "name":                 "name",
         "label":                "Имя",
         "message":              "Давай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
-        "validator":            None,
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         None,                               # Для БД
         "display_formatter":    None,                               # Для вывода
         "formatter":            None,
@@ -64,6 +64,16 @@ FIELDS = [
         "request_contact":      True
     },
     {
+        "name":                 "username",
+        "label":                "Никнейм",
+        "message":              "Введи свой никнейм в Telegram",
+        "type":                 "TEXT",
+        "validator":            lambda x: len(x) > 0,  # Убедиться, что введено хотя бы что-то
+        "db_formatter":         lambda x: x.strip() if x else None,
+        "display_formatter":    lambda x: f"@{x}" if x else "Не указан",
+        "formatter":            lambda x: x.strip(),
+    },
+    {
         "name":                 "email",
         "label":                "Email",
         "message":              "Напиши свою почту",
@@ -76,7 +86,7 @@ FIELDS = [
         "name":                 "position",
         "label":                "Желаемая должность",
         "message":              "На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)",
-        "validator":            None,
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
         "type":                 "TEXT",
@@ -131,7 +141,7 @@ FIELDS = [
         "name":                 "university",
         "label":                "Университет",
         "message":              "В каком университете ты учишься?",
-        "validator":            None,
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         None,
         "display_formatter":    None,
         "formatter":            None,
@@ -141,7 +151,7 @@ FIELDS = [
         "name":                 "study_group",
         "label":                "Группа",
         "message":              "В какой группе ты учишься?",
-        "validator":            None,
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         None,
         "display_formatter":    None,
         "formatter":            None,
@@ -151,7 +161,7 @@ FIELDS = [
         "name":                 "work",
         "label":                "Место работы",
         "message":              "Напиши место работы (если не работаешь, отправь Нет)",
-        "validator":            None,
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         None,
         "display_formatter":    None,
         "formatter":            None,
