@@ -371,6 +371,16 @@ class RegistrationFlow:
                     selected_options.append(option)  # Добавляем, если не выбрано
             else:
                 selected_options = [option]  # Для одиночного выбора заменяем на текущий выбор
+                # Удаляем только клавиатуру
+                await self.clear_inline_keyboard(update, context)
+
+                # Определяем следующее состояние
+                next_state = self.get_next_state(current_state)
+                print(f"[DEBUG] Переход к следующему состоянию: {next_state}")
+
+                # Переход к следующему состоянию
+                await self.transition_state(update, context, next_state)
+                return
 
             # Обновляем выбранные значения в базе
             self.user_storage.update_user(user_id, actual_field_name, ", ".join(selected_options))
@@ -448,7 +458,8 @@ class RegistrationFlow:
 
         # Формируем кнопки в две колонки
         keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-        keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
+        if multi_select:
+            keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
 
         return InlineKeyboardMarkup(keyboard)  # Возвращаем объект InlineKeyboardMarkup
 
