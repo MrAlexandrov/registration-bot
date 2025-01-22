@@ -105,9 +105,12 @@ class RegistrationFlow:
         message = self.get_state_message(config, user_id)
 
         if "options" in config:
+            actual_field_name = state.replace("edit_", "")
+            selected_options = self.user_storage.get_user(user_id).get(actual_field_name, "")
+            selected_options = selected_options.split(", ") if selected_options else []
             reply_markup = self.create_inline_keyboard(
                 config["options"],
-                selected_options=[],
+                selected_options=selected_options,
                 multi_select=config.get("multi_select", False)
             )
         elif "buttons" in config:
