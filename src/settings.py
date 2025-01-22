@@ -126,7 +126,6 @@ FIELDS = [
         "label":                "Вероятность поехать на 1 смену",
         "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену? (только один вариант)",
         "validator":            validate_probability,
-
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
         "multi_select":         False,
@@ -185,8 +184,8 @@ FIELDS = [
         "message":              "Есть ли у тебя диплом?",
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "type":                 "TEXT",
-        "multi_select": False,
-        "options": ["Да", "Нет"],  # Возможные варианты
+        "multi_select":         False,
+        "options":              ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "rescheduling_session",
@@ -194,8 +193,8 @@ FIELDS = [
         "message":              "Нужен ли тебе перенос сессии?",
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "type":                 "TEXT",
-        "multi_select": False,
-        "options": ["Да", "Нет"],  # Возможные варианты
+        "multi_select":         False,
+        "options":              ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "rescheduling_practice",
@@ -203,8 +202,8 @@ FIELDS = [
         "message":              "Нужен ли тебе перенос практики?",
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "type":                 "TEXT",
-        "multi_select": False,
-        "options": ["Да", "Нет"],  # Возможные варианты
+        "multi_select":         False,
+        "options":              ["Да", "Нет"],  # Возможные варианты
     },
     {
         "name":                 "medical_book",
@@ -212,8 +211,8 @@ FIELDS = [
         "message":              "Есть ли у тебя медицинская книжка?",
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "type":                 "TEXT",
-        "multi_select": False,
-        "options": ["Да", "Нет"],  # Возможные варианты
+        "multi_select":         False,
+        "options":              ["Да", "Нет"],  # Возможные варианты
     },
 ]
 
