@@ -361,9 +361,9 @@ class RegistrationFlow:
         field_config = self.get_config_by_name(actual_field_name)
         is_multi_select = field_config.get("multi_select", False)
 
-        if action == "select":
-            selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
+        selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
 
+        if action == "select":
             if is_multi_select:
                 if option in selected_options:
                     selected_options.remove(option)  # Убираем, если уже выбрано
@@ -386,12 +386,13 @@ class RegistrationFlow:
 
             # Кнопки в две колонки
             buttons = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-            buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
+            if selected_options:
+                buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
             reply_markup = InlineKeyboardMarkup(buttons)
 
             await query.edit_message_reply_markup(reply_markup=reply_markup)
 
-        elif action == "done":
+        elif action == "done" and selected_options:
             # Удаляем только клавиатуру
             await self.clear_inline_keyboard(update, context)
 
@@ -442,8 +443,8 @@ class RegistrationFlow:
 
         # Формируем кнопки в две колонки
         keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-        if multi_select:
-            keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
+        # if multi_select:
+        #     keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
 
         return InlineKeyboardMarkup(keyboard)  # Возвращаем объект InlineKeyboardMarkup
 
