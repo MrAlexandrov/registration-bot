@@ -219,7 +219,7 @@ FIELDS = [
 
 def generate_registered_message():
     """Генерирует сообщение о регистрации на основе FIELDS."""
-    message = "Отлично! Вот, что я запомнил:\n"
+    message = "Отлично! Вот, что я запомнил, проверь, пожалуйста, что всё верно:\n"
     for field in FIELDS:
         message += f"{field['label']}: `{{{field['name']}}}`\n"  # <-- правильная подстановка
     return message
