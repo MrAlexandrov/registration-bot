@@ -8,3 +8,6 @@ conversationbot
 *.csv
 *.db
 *.jpg
+database.sqlite
+dumps
+notes.md

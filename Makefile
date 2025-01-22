@@ -16,6 +16,9 @@ run:
 test:
 	PYTHONPATH=src pytest tests
 
+dump:
+	bash dump.sh
+
 drop:
 	rm database.sqlite | true
 
