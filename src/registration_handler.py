@@ -86,7 +86,11 @@ class RegistrationFlow:
         config = self.get_config_by_state(state)
         if not config:
             print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
-            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
+            await context.bot.send_message(
+                chat_id=user_id, 
+                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                parse_mode=ParseMode.MARKDOWN,
+            )
             return
         
         # Если это состояние для сбора никнейма, обработать его сразу
@@ -160,7 +164,11 @@ class RegistrationFlow:
         config = self.get_config_by_state(current_state)
         if not config:
             print(f"[ERROR] Некорректное состояние '{current_state}'")
-            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
+            await context.bot.send_message(
+                chat_id=user_id, 
+                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                parse_mode=ParseMode.MARKDOWN,
+            )
             return
 
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
@@ -219,7 +227,11 @@ class RegistrationFlow:
 
         if not field_config:
             print(f"[ERROR] Поле '{actual_state}' не найдено.")
-            await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
+            await context.bot.send_message(
+                chat_id=user_id, 
+                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                parse_mode=ParseMode.MARKDOWN,
+            )
             return
 
         # Если поле требует номер телефона
