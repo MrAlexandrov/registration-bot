@@ -212,46 +212,6 @@ class RegistrationFlow:
             await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
             return
 
-        # Если поле предполагает выбор из кнопок
-        if field_config.get("options"):
-            print("[ERROR] process_data_input handling options")
-        #     selected_options = user_data.get(actual_state, "")
-        #     selected_options = selected_options.split(", ") if selected_options else []
-        #     if user_input == "Готово":
-        #         if not selected_options:
-        #             await context.bot.send_message(chat_id=user_id, text="Выберите хотя бы один вариант.")
-        #             return
-        #         formatted_db_value = ", ".join(selected_options)
-        #         self.user_storage.update_user(user_id, actual_state, formatted_db_value)
-        #         next_state = self.get_next_state(state)
-        #         print(f"[DEBUG] Следующее состояние для пользователя {user_id}: {next_state}")
-        #         await self.transition_state(update, context, next_state)
-        #         return
-
-        #     # Обновляем выбор
-        #     if user_input in selected_options:
-        #         selected_options.remove(user_input)
-        #     else:
-        #         selected_options.append(user_input)
-
-        #     try:
-        #         # Перерисовываем клавиатуру
-        #         reply_markup = InlineKeyboardMarkup(
-        #             self.create_inline_keyboard(field_config["options"], selected_options)
-        #         )
-        #         await context.bot.edit_message_reply_markup(
-        #             chat_id=update.effective_chat.id,
-        #             message_id=update.effective_message.message_id,
-        #             reply_markup=reply_markup
-        #         )
-        #     except telegram.error.BadRequest as e:
-        #         print(f"[ERROR] Не удалось отредактировать сообщение: {e}")
-        #         # Уведомление пользователя или fallback действие
-        #         await context.bot.send_message(
-        #             chat_id=update.effective_chat.id,
-        #             text="Произошла ошибка при обновлении клавиатуры. Попробуйте ещё раз."
-        #         )
-
         # Если поле требует номер телефона
         if field_config.get("request_contact") and update.message.contact:
             user_input = update.message.contact.phone_number
