@@ -148,6 +148,11 @@ class RegistrationFlow:
         """Обрабатывает пользовательский ввод для всех состояний."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
+        # For user, that does not saved in db, if send some message
+        if user is None:
+            await context.bot.send_message(chat_id=user_id, text="Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново")
+            await self.handle_command(update, context)
+            return
         current_state = user["state"]
 
         print(f"[DEBUG] Пользователь {user_id} находится в состоянии '{current_state}'")
