@@ -33,32 +33,53 @@ from formatters import (
     format_probability_display,
 )
 
+MESSAGES = {
+    "name":                     """Давай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)""",
+    "birth_date":               """Когда у тебя день рождения? (в формате 10.03.2002)""",
+    "phone":                    """Напиши свой номер телефона или поделись им из Telegram""",
+    "username":                 """Введи свой никнейм в Telegram""",
+    "email":                    """Напиши свою почту""",
+    "position":                 """На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)""",
+    "desired_age":              """С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)""",
+    "probability_instructive":  """Напиши, с какой вероятностью ты сможешь поехать на Инструктив? (только один вариант)""",
+    "probability_first":        """Напиши, с какой вероятностью ты сможешь поехать на 1 смену?""",
+    "probability_second":       """С какой вероятностью ты сможешь поехать на 2 смену?""",
+    "education_choice":         """Где ты учишься?""",
+    "other_education":          """Укажи название своего учебного заведения""",
+    "study_group":              """В какой группе ты учишься?""",
+    "work":                     """Работаешь ли ты?""",
+    "work_place":               """Напиши, где именно ты работаешь""",
+    "diplom":                   """Есть ли у тебя диплом?""",
+    "rescheduling_session":     """Нужен ли тебе перенос сессии?""",
+    "rescheduling_practice":    """Нужен ли тебе перенос практики?""",
+    "medical_book":             """Есть ли у тебя медицинская книжка?""",
+    # "next_field":               """""",
+}
+
 # {
-#     "name":                 "name",
-#     "label":                "label",
-#     "message":              "message",
+#     "name":                 "next_field",
+#     "label":                "label_that_user_will_see",
+#     "message":              MESSAGES["next_field"],
 #     "validator":            lambda x: len(x) > 0,
-#     "db_formatter":         None,                               # Для БД
-#     "display_formatter":    None,                               # Для вывода
-#     "formatter":            None,                               # ???
-#     "display_formatter":    None,
-#     "type":                 "TEXT",
-#     "request_contact":      True,
-#     "multi_select":         True,
-#     "options":              ["First", "Second"],
+#     "db_formatter":         None,                         # function that will process the data before entering it into the database
+#     "display_formatter":    None,                         # function that will process data from the database before displaying it
+#     "type":                 "TEXT",                       # the type in which the data will be stored 
+#     "request_contact":      True,                         # to collect a contact via the telegram api
+#     "options":              ["First", "Second"],          # inline buttons
+#     "multi_select":         True,                         # oppotunity to select several options (default False)
 # },
 
 FIELDS = [
     {
         "name":                 "name",
         "label":                "Имя",
-        "message":              "Давай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
+        "message":              MESSAGES["name"],
         "type":                 "TEXT",
     },
     {
         "name":                 "birth_date",
         "label":                "Дата рождения",
-        "message":              "Когда у тебя день рождения? (в формате 10.03.2002)",
+        "message":              MESSAGES["birth_date"],
         "validator":            validate_date,
         "db_formatter":         format_date,
         "type": "TEXT",
@@ -66,7 +87,7 @@ FIELDS = [
     {
         "name":                 "phone",
         "label":                "Телефон",
-        "message":              "Напиши свой номер телефона или поделись им из Telegram",
+        "message":              MESSAGES["phone"],
         "validator":            validate_phone,
         "db_formatter":         format_phone_db,
         "display_formatter":    format_phone_display,
@@ -76,9 +97,9 @@ FIELDS = [
     {
         "name":                 "username",
         "label":                "Никнейм",
-        "message":              "Введи свой никнейм в Telegram",
+        "message":              MESSAGES["username"],
         "type":                 "TEXT",
-        "validator":            lambda x: len(x) > 0,  # Убедиться, что введено хотя бы что-то
+        "validator":            lambda x: len(x) > 0,
         "db_formatter":         lambda x: x.strip() if x else None,
         "display_formatter":    lambda x: f"@{x}" if x else "Не указан",
         "formatter":            lambda x: x.strip(),
@@ -86,14 +107,14 @@ FIELDS = [
     {
         "name":                 "email",
         "label":                "Email",
-        "message":              "Напиши свою почту",
+        "message":              MESSAGES["email"],
         "validator":            validate_email,
         "type":                 "TEXT",
     },
     {
         "name":                 "position",
         "label":                "Желаемая должность",
-        "message":              "На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)",
+        "message":              MESSAGES["position"],
         "validator":            lambda x: len(x) > 0,
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
@@ -104,7 +125,7 @@ FIELDS = [
     {
         "name":                 "desired_age",
         "label":                "Желаемый возраст",
-        "message":              "С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)",
+        "message":              MESSAGES["desired_age"],
         "db_formatter":         lambda x: ", ".join(x) if isinstance(x, list) else x,
         "display_formatter":    lambda x: ", ".join(x) if isinstance(x, list) else x,
         "type":                 "TEXT",
@@ -114,7 +135,7 @@ FIELDS = [
     {
         "name":                 "probability_instructive",
         "label":                "Вероятность поехать на Инструктив",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на Инструктив? (только один вариант)",
+        "message":              MESSAGES["probability_instructive"],
         "validator":            validate_probability,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
@@ -124,7 +145,7 @@ FIELDS = [
     {
         "name":                 "probability_first",
         "label":                "Вероятность поехать на 1 смену",
-        "message":              "Напиши, с какой вероятностью ты сможешь поехать на 1 смену? (только один вариант)",
+        "message":              MESSAGES["probability_first"],
         "validator":            validate_probability,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
@@ -134,7 +155,7 @@ FIELDS = [
     {
         "name":                 "probability_second",
         "label":                "Вероятность поехать на 2 смену",
-        "message":              "С какой вероятностью ты сможешь поехать на 2 смену? (только один вариант)",
+        "message":              MESSAGES["probability_second"],
         "validator":            validate_probability,
         "display_formatter":    format_probability_display,
         "type":                 "TEXT",
@@ -144,7 +165,7 @@ FIELDS = [
     {
         "name":                 "education_choice",
         "label":                "Место учёбы",
-        "message":              "Где ты учишься?",
+        "message":              MESSAGES["education_choice"],
         "validator":            lambda x: len(x) > 0,
         "type":                 "TEXT",
         "multi_select":         False,
@@ -153,66 +174,66 @@ FIELDS = [
     {
         "name":                 "other_education",
         "label":                "Другое учебное заведение",
-        "message":              "Укажи название своего учебного заведения",
+        "message":              MESSAGES["other_education"],
         "type":                 "TEXT",
     },
     {
         "name":                 "study_group",
         "label":                "Группа",
-        "message":              "В какой группе ты учишься?",
+        "message":              MESSAGES["study_group"],
         "validator":            lambda x: len(x) > 0,
         "type":                 "TEXT",
     },
     {
         "name":                 "work",
         "label":                "Работаешь",
-        "message":              "Работаешь ли ты?",
+        "message":              MESSAGES["work"],
         "display_formatter":    lambda x: "Да" if x == "Да" else "Нет",
         "type":                 "TEXT",
         "multi_select":         False,
-        "options":              ["Да", "Нет"],  # Возможные варианты
+        "options":              ["Да", "Нет"],
     },
     {
         "name":                 "work_place",
         "label":                "Место работы",
-        "message":              "Напиши, где именно ты работаешь",
+        "message":              MESSAGES["work_place"],
         "type":                 "TEXT",
     },
     {
         "name":                 "diplom",
         "label":                "Диплом",
-        "message":              "Есть ли у тебя диплом?",
+        "message":              MESSAGES["diplom"],
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "type":                 "TEXT",
         "multi_select":         False,
-        "options":              ["Да", "Нет"],  # Возможные варианты
+        "options":              ["Да", "Нет"],
     },
     {
         "name":                 "rescheduling_session",
         "label":                "Нужен перенос сессии",
-        "message":              "Нужен ли тебе перенос сессии?",
+        "message":              MESSAGES["rescheduling_session"],
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "type":                 "TEXT",
         "multi_select":         False,
-        "options":              ["Да", "Нет"],  # Возможные варианты
+        "options":              ["Да", "Нет"],
     },
     {
         "name":                 "rescheduling_practice",
         "label":                "Нужен перенос практики",
-        "message":              "Нужен ли тебе перенос практики?",
+        "message":              MESSAGES["rescheduling_practice"],
         "display_formatter":    lambda x: "Нужен" if x == "Да" else "Не нужен",
         "type":                 "TEXT",
         "multi_select":         False,
-        "options":              ["Да", "Нет"],  # Возможные варианты
+        "options":              ["Да", "Нет"],
     },
     {
         "name":                 "medical_book",
         "label":                "Медицинская книжка",
-        "message":              "Есть ли у тебя медицинская книжка?",
+        "message":              MESSAGES["medical_book"],
         "display_formatter":    lambda x: "Есть" if x == "Да" else "Нет",
         "type":                 "TEXT",
         "multi_select":         False,
-        "options":              ["Да", "Нет"],  # Возможные варианты
+        "options":              ["Да", "Нет"],
     },
 ]
 
@@ -220,7 +241,7 @@ def generate_registered_message():
     """Генерирует сообщение о регистрации на основе FIELDS."""
     message = "Отлично! Вот, что я запомнил, проверь, пожалуйста, что всё верно:\n"
     for field in FIELDS:
-        message += f"{field['label']}: `{{{field['name']}}}`\n"  # <-- правильная подстановка
+        message += f"{field['label']}: `{{{field['name']}}}`\n"
     return message
 
 
@@ -228,11 +249,11 @@ POST_REGISTRATION_STATES = [
     {
         "name":                 "registered",
         "message":              generate_registered_message(),
-        "buttons":              ["Изменить данные"],  # Здесь можно добавить любые действия
+        "buttons":              ["Изменить данные"],
     },
     {
         "name":                 "edit",
         "message":              "Что хочешь изменить?",
-        "buttons":              lambda: [field["label"] for field in FIELDS] + ["Отмена"],   
+        "buttons":              lambda: [field["label"] for field in FIELDS] + ["Отмена"],
     },
 ]
