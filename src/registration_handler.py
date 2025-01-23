@@ -191,8 +191,14 @@ class RegistrationFlow:
             field_config = self.get_config_by_label(user_input)
             if not field_config:
                 print(f"[ERROR] Поле '{user_input}' не найдено.")
-                await context.bot.send_message(chat_id=user_id, text="Произошла ошибка. Попробуй снова.")
+                await context.bot.send_message(chat_id=user_id, text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование")
                 return
+
+            if field_config["name"] == "username":
+                user_data = self.user_storage.get_user(user_id)
+                if user_data["username"]:
+                    await context.bot.send_message(chat_id=user_id, text="Я автоматически собрал твой ник в Telegram, если у тебя действительно поменялся аккаунт, напиши людям, отвечающим за регистрацию, они решат вопрос")
+                    return
 
             await self.transition_state(update, context, f"edit_{field_config['name']}")
 
