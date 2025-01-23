@@ -19,9 +19,6 @@ test:
 dump:
 	bash dump.sh
 
-drop:
-	rm database.sqlite | true
-
 clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -exec rm -rf {} +
