@@ -9,7 +9,7 @@ class UserStorage:
 
     def _create_table(self):
         """Создаёт таблицу на основе FIELDS."""
-        fields_sql = ", ".join([f"{field['name']} {field['type']}" for field in FIELDS])
+        fields_sql = ", ".join([f"{field['name']} {field.get('type', 'TEXT')}" for field in FIELDS])
         sql_query = f"""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -199,7 +199,6 @@ class RegistrationFlow:
 
     async def process_data_input(self, update, context, state, user_input):
         """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
-        print("******************************************************** process_data_input")
         user_id = update.effective_user.id
         user_data = self.user_storage.get_user(user_id)
 
