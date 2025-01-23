@@ -266,26 +266,31 @@ class RegistrationFlow:
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
         return next((f for f in FIELDS if f["label"] == label), None)
 
+    def get_registered_message(self, config, user_id):
+        if config["name"] != "registered":
+            print(f"[ERROR] get_registered_message should use only for register state, current state = {config['name']}") 
+        user = self.user_storage.get_user(user_id)
+        print(f"[DEBUG] Данные пользователя из базы: {user}")
+
+        # Формируем словарь с данными пользователя
+        user_data = {
+            field["name"]: field["display_formatter"](user.get(field["name"], "Не указано"))
+            if "display_formatter" in field and callable(field["display_formatter"])
+            else user.get(field["name"], "Не указано")
+            for field in FIELDS
+        }
+
+        print(f"[DEBUG] Подготовленные данные для подстановки: {user_data}")
+
+        # Формируем сообщение с подстановкой данных
+        return config["message"].format(**user_data)
+
     def get_state_message(self, config, user_id):
         """Формирует сообщение состояния, включая подстановку данных пользователя."""
         print(f"[DEBUG] Формирование сообщения для состояния '{config['name']}'")
 
         if config["name"] == "registered":
-            user = self.user_storage.get_user(user_id)
-            print(f"[DEBUG] Данные пользователя из базы: {user}")
-
-            # Формируем словарь с данными пользователя
-            user_data = {
-                field["name"]: field["display_formatter"](user.get(field["name"], "Не указано"))
-                if "display_formatter" in field and callable(field["display_formatter"])
-                else user.get(field["name"], "Не указано")
-                for field in FIELDS
-            }
-
-            print(f"[DEBUG] Подготовленные данные для подстановки: {user_data}")
-
-            # Формируем сообщение с подстановкой данных
-            return config["message"].format(**user_data)
+            return self.get_registered_message(config, user_id)
 
         # Возвращаем стандартное сообщение для других состояний
         return config["message"]
