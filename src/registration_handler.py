@@ -9,15 +9,17 @@ from telegram import (
 import telegram
 from telegram.ext import CallbackContext
 from user_storage import user_storage
-from settings import FIELDS, POST_REGISTRATION_STATES
+from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, ADMIN_IDS
 from telegram.constants import ParseMode
+from constants import *
 
 
 class RegistrationFlow:
     def __init__(self, user_storage):
         self.user_storage = user_storage
-        self.steps = [field["name"] for field in FIELDS]
-        self.states_config = {state["name"]: state for state in POST_REGISTRATION_STATES}
+        self.steps = [field[STATE] for field in FIELDS]
+        self.states_config = {state[STATE]: state for state in POST_REGISTRATION_STATES}
+        self.admin_states_config = {state[STATE]: state for state in ADMIN_STATES}
 
     async def handle_command(self, update, context):
         """Обрабатывает команды, такие как /start."""
@@ -29,13 +31,13 @@ class RegistrationFlow:
             self.user_storage.create_user(user_id)
             await self.transition_state(update, context, self.steps[0])
         else:
-            print(f"[DEBUG] Пользователь {user_id} уже существует в состоянии '{user['state']}'")
-            await self.transition_state(update, context, user["state"])
+            print(f"[DEBUG] Пользователь {user_id} уже существует в состоянии '{user[STATE]}'")
+            await self.transition_state(update, context, user[STATE])
 
     async def try_auto_collect_nickname(self, update, context, state, user_id):
         username = update.message.from_user.username
         if username:  # Ник есть в Telegram
-            self.user_storage.update_user(user_id, "username", username)
+            self.user_storage.update_user(user_id, USERNAME, username)
             await context.bot.send_message(chat_id=user_id, text=f"Твой ник @{username} сохранен автоматически.")
             next_state = self.get_next_state(state)
             await self.transition_state(update, context, next_state)
@@ -43,33 +45,33 @@ class RegistrationFlow:
         return False
 
     async def try_skip_education_questions(self, update, context, state, user_id, user_data):
-        if state == "other_education":
-            if user_data["education_choice"] != "Другое учебное заведение":
-                self.user_storage.update_user(user_id, "other_education", "Нет")
+        if state == OTHER_EDUCATION:
+            if user_data[EDUCATION_CHOICE] != OTHER_STUDY_PLACE:
+                self.user_storage.update_user(user_id, OTHER_EDUCATION, NO)
                 # await context.bot.send_message(chat_id=user_id, text="Другое учебное заведение заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return True
 
-        if state == "study_group":
-            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
-                self.user_storage.update_user(user_id, "study_group", "Нет")
+        if state == STUDY_GROUP:
+            if user_data[EDUCATION_CHOICE] == FINISHED or user_data[EDUCATION_CHOICE] == DO_NOT_STUDY:
+                self.user_storage.update_user(user_id, STUDY_GROUP, NO)
                 # await context.bot.send_message(chat_id=user_id, text="Учебную группу заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return True
 
-        if state == "rescheduling_session":
-            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
-                self.user_storage.update_user(user_id, "rescheduling_session", "Нет")
+        if state == RESCHEDULING_SESSION:
+            if user_data[EDUCATION_CHOICE] == FINISHED or user_data[EDUCATION_CHOICE] == DO_NOT_STUDY:
+                self.user_storage.update_user(user_id, RESCHEDULING_SESSION, NO)
                 # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос сессии заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return True
 
-        if state == "rescheduling_practice":
-            if user_data["education_choice"] == "Закончил(а)" or user_data["education_choice"] == "Не учусь":
-                self.user_storage.update_user(user_id, "rescheduling_practice", "Нет")
+        if state == RESCHEDULING_PRACTICE:
+            if user_data[EDUCATION_CHOICE] == FINISHED or user_data[EDUCATION_CHOICE] == DO_NOT_STUDY:
+                self.user_storage.update_user(user_id, RESCHEDULING_PRACTICE, NO)
                 # await context.bot.send_message(chat_id=user_id, text="Информацию про перенос практики заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
@@ -85,26 +87,29 @@ class RegistrationFlow:
         # Находим конфигурацию состояния
         config = self.get_config_by_state(state)
         if not config:
-            print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
-            await context.bot.send_message(
-                chat_id=user_id, 
-                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
-                parse_mode=ParseMode.MARKDOWN,
-            )
-            return
-        
+            if user_id in ADMIN_IDS:
+                config = self.get_admin_config_by_state(state)
+            else:
+                print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
+                await context.bot.send_message(
+                    chat_id=user_id, 
+                    text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                    parse_mode=ParseMode.MARKDOWN,
+                )
+                return
+
         # Если это состояние для сбора никнейма, обработать его сразу
-        if state == "username":
+        if state == USERNAME:
             if await self.try_auto_collect_nickname(update, context, state, user_id):
                 return
 
-        if state in {"other_education", "study_group", "rescheduling_session", "rescheduling_practice"}:
+        if state in {OTHER_EDUCATION, STUDY_GROUP, RESCHEDULING_SESSION, RESCHEDULING_PRACTICE}:
             if await self.try_skip_education_questions(update, context, state, user_id, user_data):
                 return
 
-        if state == "work_place":
-            if user_data["work"] == "Нет":
-                self.user_storage.update_user(user_id, "work_place", user_data["work"])
+        if state == WORK_PLACE:
+            if user_data[WORK] == NO:
+                self.user_storage.update_user(user_id, WORK_PLACE, user_data[WORK])
                 # await context.bot.send_message(chat_id=user_id, text="Место работы заполнять не нужно")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
@@ -117,26 +122,31 @@ class RegistrationFlow:
         message = self.get_state_message(config, user_id)
 
         actual_field_name = state.replace("edit_", "")
-        if "options" in config:
+        if OPTIONS in config:
             selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
             reply_markup = self.create_inline_keyboard(
-                config["options"],
+                config[OPTIONS],
                 selected_options=selected_options,
-                multi_select=config.get("multi_select", False)
+                multi_select=config.get(MULTI_SELECT, False)
             )
-        elif "buttons" in config:
-            buttons = config["buttons"]() if callable(config["buttons"]) else config["buttons"]
+        elif BUTTONS in config:
+            buttons = config[BUTTONS]() if callable(config[BUTTONS]) else config[BUTTONS]
 
-            if state == "edit":
-                user_nickname = user_data.get("username", "")
+            if state == EDIT:
+                user_nickname = user_data.get(USERNAME, "")
 
                 # Убираем кнопку "Изменить ник", если ник уже установлен
                 if user_nickname:
                     buttons = [button for button in buttons if button != "Никнейм"]
 
-            reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True)
-        elif config.get("request_contact"):
+            if state == REGISTERED and user_id in ADMIN_IDS:
+                print("[ADMIN] click Отправить сообщение")
+                if "Отправить сообщение всем пользователям" not in buttons:
+                    buttons.append("Отправить сообщение всем пользователям")
+
+            reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
+        elif config.get(REQUEST_CONTACT):
             reply_markup = ReplyKeyboardMarkup(
                 [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]],
                 resize_keyboard=True,
@@ -157,13 +167,34 @@ class RegistrationFlow:
             await context.bot.send_message(chat_id=user_id, text="Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново")
             await self.handle_command(update, context)
             return
-        current_state = user["state"]
+        state = user[STATE]
 
-        print(f"[DEBUG] Пользователь {user_id} находится в состоянии '{current_state}'")
+        print(f"[DEBUG] Пользователь {user_id} находится в состоянии '{state}'")
 
-        config = self.get_config_by_state(current_state)
+        if user_id in ADMIN_IDS:
+            self.user_storage.update_state(user_id, state)
+            config = self.get_admin_config_by_state(state)
+
+            if state == ADMIN_SEND_MESSAGE:
+                user_input = update.message.text
+                if user_input == CANCEL:
+                    await self.transition_state(update, context, REGISTERED)
+                    return
+                all_users_id = self.user_storage.get_all_users()
+                print(f"all_users_id = {all_users_id}")
+                for current_user_id in all_users_id:
+                    try:
+                        await context.bot.send_message(chat_id=current_user_id, text=update.message.text)
+                    except:
+                        print(f"[ERROR] cant sent message for user {current_user_id}")
+                await context.bot.send_message(chat_id=user_id, text=f"Сообщение было отправлено {len(all_users_id)} пользователям")
+                print(f"[DEBUG] message {update.message.text} was send for {len(all_users_id)} users")
+                await self.transition_state(update, context, REGISTERED)
+                return
+
+        config = self.get_config_by_state(state)
         if not config:
-            print(f"[ERROR] Некорректное состояние '{current_state}'")
+            print(f"[ERROR] Некорректное состояние '{state}'")
             await context.bot.send_message(
                 chat_id=user_id, 
                 text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
@@ -174,26 +205,35 @@ class RegistrationFlow:
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
 
         # Обработка выбора действия (edit, registered)
-        if "buttons" in config:
-            await self.process_action_input(update, context, current_state, user_input)
+        if BUTTONS in config:
+            await self.process_action_input(update, context, state, user_input)
             return
 
         # Обработка ввода данных (регистрация/редактирование)
-        await self.process_data_input(update, context, current_state, user_input)
+        await self.process_data_input(update, context, state, user_input)
 
     async def process_action_input(self, update, context, state, user_input):
         """Обрабатывает кнопки в состояниях registered и edit."""
         user_id = update.message.from_user.id
 
-        if state == "registered" and user_input == "Изменить данные":
-            print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
-            await self.transition_state(update, context, "edit")
-            return
+        if state == REGISTERED:
+            if user_input == CHANGE_DATA:
+                print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
+                await self.transition_state(update, context, EDIT)
+                return
+            if user_input == "Отправить сообщение всем пользователям" and user_id in ADMIN_IDS:
+                await self.transition_state(update, context, ADMIN_SEND_MESSAGE)
+                return
 
-        if state == "edit":
-            if user_input == "Отмена":
+        if state == ADMIN_SEND_MESSAGE:
+            if user_input == CANCEL:
+                await self.transition_state(update, context)
+                return
+
+        if state == EDIT:
+            if user_input == CANCEL:
                 print(f"[DEBUG] Пользователь {user_id} отменил редактирование.")
-                await self.transition_state(update, context, "registered")
+                await self.transition_state(update, context, REGISTERED)
                 return
 
             field_config = self.get_config_by_label(user_input)
@@ -202,17 +242,17 @@ class RegistrationFlow:
                 await context.bot.send_message(chat_id=user_id, text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование")
                 return
 
-            if field_config["name"] == "username":
+            if field_config[STATE] == USERNAME:
                 user_data = self.user_storage.get_user(user_id)
-                if user_data["username"]:
+                if user_data[USERNAME]:
                     await context.bot.send_message(chat_id=user_id, text="Я автоматически собрал твой ник в Telegram, если у тебя действительно поменялся аккаунт, напиши людям, отвечающим за регистрацию, они решат вопрос")
                     return
 
-            await self.transition_state(update, context, f"edit_{field_config['name']}")
+            await self.transition_state(update, context, f"edit_{field_config[STATE]}")
 
     def apply_db_formatter(self, field_name, value):
         """Применяет форматтер для базы данных, если он указан в конфиге."""
-        field_config = next((f for f in FIELDS if f["name"] == field_name), None)
+        field_config = next((f for f in FIELDS if f[STATE] == field_name), None)
         db_formatter = field_config.get("db_formatter")
         return db_formatter(value) if db_formatter else value
 
@@ -223,7 +263,7 @@ class RegistrationFlow:
 
         # Убираем edit_, чтобы найти конфиг в FIELDS
         actual_state = state.replace("edit_", "")
-        field_config = next((f for f in FIELDS if f["name"] == actual_state), None)
+        field_config = next((f for f in FIELDS if f[STATE] == actual_state), None)
 
         if not field_config:
             print(f"[ERROR] Поле '{actual_state}' не найдено.")
@@ -235,11 +275,11 @@ class RegistrationFlow:
             return
 
         # Если поле требует номер телефона
-        if field_config.get("request_contact") and update.message.contact:
+        if field_config.get(REQUEST_CONTACT) and update.message.contact:
             user_input = update.message.contact.phone_number
 
         # Проверяем валидатор, если указан
-        if field_config.get("validator") and not field_config["validator"](user_input):
+        if field_config.get(VALIDATOR) and not field_config[VALIDATOR](user_input):
             await context.bot.send_message(chat_id=user_id, text=f"Некорректное значение для {field_config['label']}. Попробуй снова.")
             return
 
@@ -255,14 +295,14 @@ class RegistrationFlow:
         actual_state = state.replace("edit_", "")
 
         if state.startswith("edit_"):
-            return "registered"  # Возврат к registered после редактирования
+            return REGISTERED  # Возврат к registered после редактирования
 
         if actual_state in self.steps:
             current_index = self.steps.index(actual_state)
             if current_index < len(self.steps) - 1:
                 return self.steps[current_index + 1]
 
-        return "registered"
+        return REGISTERED
 
     def get_config_by_state(self, state):
         """Возвращает конфигурацию состояния по имени."""
@@ -270,14 +310,26 @@ class RegistrationFlow:
 
         if state.startswith("edit_"):
             original_field_name = state.replace("edit_", "")
-            config = next((f for f in FIELDS if f["name"] == original_field_name), None)
+            config = next((f for f in FIELDS if f[STATE] == original_field_name), None)
             if config:
                 print(f"[DEBUG] Сгенерирована конфигурация для edit состояния: {config}")
             else:
                 print(f"[ERROR] Конфигурация для edit состояния '{state}' не найдена.")
             return config
 
-        config = next((f for f in FIELDS if f["name"] == state), None) or self.states_config.get(state)
+        config = next((f for f in FIELDS if f[STATE] == state), None) or self.states_config.get(state)
+        if config:
+            print(f"[DEBUG] Найдена конфигурация для состояния '{state}': {config}")
+        else:
+            print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
+        return config
+
+    def get_admin_config_by_state(self, state):
+        """Возвращает конфигурацию состояния по имени."""
+        print(f"[DEBUG] Поиск конфигурации для состояния '{state}'")
+
+        config = next((f for f in ADMIN_STATES if f[STATE] == state), None) or self.admin_states_config.get(state)
+
         if config:
             print(f"[DEBUG] Найдена конфигурация для состояния '{state}': {config}")
         else:
@@ -286,36 +338,36 @@ class RegistrationFlow:
 
     def get_config_by_label(self, label):
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
-        return next((f for f in FIELDS if f["label"] == label), None)
+        return next((f for f in FIELDS if f[LABEL] == label), None)
 
     def get_registered_message(self, config, user_id):
-        if config["name"] != "registered":
-            print(f"[ERROR] get_registered_message should use only for register state, current state = {config['name']}") 
+        if config[STATE] != REGISTERED:
+            print(f"[ERROR] get_registered_message should use only for register state, current state = {config[STATE]}") 
         user = self.user_storage.get_user(user_id)
         print(f"[DEBUG] Данные пользователя из базы: {user}")
 
         # Формируем словарь с данными пользователя
         user_data = {
-            field["name"]: field["display_formatter"](user.get(field["name"], "Не указано"))
-            if "display_formatter" in field and callable(field["display_formatter"])
-            else user.get(field["name"], "Не указано")
+            field[STATE]: field[DISPLAY_FORMATTER](user.get(field[STATE], "Не указано"))
+            if DISPLAY_FORMATTER in field and callable(field[DISPLAY_FORMATTER])
+            else user.get(field[STATE], "Не указано")
             for field in FIELDS
         }
 
         print(f"[DEBUG] Подготовленные данные для подстановки: {user_data}")
 
         # Формируем сообщение с подстановкой данных
-        return config["message"].format(**user_data)
+        return config[MESSAGE].format(**user_data)
 
     def get_state_message(self, config, user_id):
         """Формирует сообщение состояния, включая подстановку данных пользователя."""
-        print(f"[DEBUG] Формирование сообщения для состояния '{config['name']}'")
+        print(f"[DEBUG] Формирование сообщения для состояния '{config[STATE]}'")
 
-        if config["name"] == "registered":
+        if config[STATE] == REGISTERED:
             return self.get_registered_message(config, user_id)
 
         # Возвращаем стандартное сообщение для других состояний
-        return config["message"]
+        return config[MESSAGE]
 
     async def clear_inline_keyboard(self, update):
         """Удаляет только инлайн-клавиатуру, оставляя текст сообщения."""
@@ -334,14 +386,14 @@ class RegistrationFlow:
 
         user_id = query.from_user.id
         user = self.user_storage.get_user(user_id)
-        state = user["state"]
+        state = user[STATE]
 
         # Преобразование edit_* в основное имя поля
         actual_field_name = state.replace("edit_", "")
 
         # Проверяем, является ли выбор одиночным или множественным
         field_config = self.get_config_by_state(actual_field_name)
-        is_multi_select = field_config.get("multi_select", False)
+        is_multi_select = field_config.get(MULTI_SELECT, False)
 
         selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
 
@@ -376,12 +428,12 @@ class RegistrationFlow:
                     f"✅ {opt}" if opt in selected_options else opt,
                     callback_data=f"select|{opt}"
                 )
-                for opt in field_config["options"]
+                for opt in field_config[OPTIONS]
             ]
 
             # Кнопки в две колонки
             buttons = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
-            buttons.append([InlineKeyboardButton("Готово", callback_data="done")])
+            buttons.append([InlineKeyboardButton(DONE, callback_data="done")])
             reply_markup = InlineKeyboardMarkup(buttons)
 
             if query.message.reply_markup != reply_markup:
@@ -416,7 +468,7 @@ class RegistrationFlow:
         # Формируем кнопки в две колонки
         keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
         if multi_select:
-            keyboard.append([InlineKeyboardButton("Готово", callback_data="done")])
+            keyboard.append([InlineKeyboardButton(DONE, callback_data="done")])
 
         return InlineKeyboardMarkup(keyboard)  # Возвращаем объект InlineKeyboardMarkup
 

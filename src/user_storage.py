@@ -1,5 +1,6 @@
 import sqlite3
 from settings import FIELDS
+from constants import NAME, TYPE, STATE
 
 class UserStorage:
     def __init__(self, db_path="database.sqlite"):
@@ -9,7 +10,7 @@ class UserStorage:
 
     def _create_table(self):
         """Создаёт таблицу на основе FIELDS."""
-        fields_sql = ", ".join([f"{field['name']} {field.get('type', 'TEXT')}" for field in FIELDS])
+        fields_sql = ", ".join([f"{field[STATE]} {field.get(TYPE, 'TEXT')}" for field in FIELDS])
         sql_query = f"""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,9 +22,9 @@ class UserStorage:
         self.cursor.execute(sql_query)
         self.connection.commit()
 
-    def create_user(self, user_id, initial_state="name"):
+    def create_user(self, user_id, initial_state=NAME):
         """Создаёт нового пользователя с пустыми полями."""
-        columns = ", ".join(["telegram_id", "state"] + [field["name"] for field in FIELDS])
+        columns = ", ".join(["telegram_id", STATE] + [field[STATE] for field in FIELDS])
         placeholders = ", ".join(["?"] * (len(FIELDS) + 2))
         self.cursor.execute(
             f"INSERT INTO users ({columns}) VALUES ({placeholders})",
@@ -49,7 +50,13 @@ class UserStorage:
             return None
 
         # Генерируем словарь на основе FIELDS
-        column_names = ["id", "telegram_id", "state"] + [field["name"] for field in FIELDS]
+        column_names = ["id", "telegram_id", STATE] + [field[STATE] for field in FIELDS]
         return dict(zip(column_names, row))
+
+    def get_all_users(self):
+        self.cursor.execute("SELECT telegram_id from users")
+        users_id = self.cursor.fetchone()
+        self.connection.commit()
+        return users_id
 
 user_storage = UserStorage()
