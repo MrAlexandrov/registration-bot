@@ -1,13 +1,13 @@
 from telegram import (
-    Update, 
+    # Update, 
     ReplyKeyboardMarkup, 
     KeyboardButton, 
     ReplyKeyboardRemove, 
     InlineKeyboardMarkup, 
     InlineKeyboardButton,
 )
-import telegram
-from telegram.ext import CallbackContext
+# import telegram
+# from telegram.ext import CallbackContext
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS
 from telegram.constants import ParseMode
