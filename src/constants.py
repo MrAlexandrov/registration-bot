@@ -50,3 +50,6 @@ REQUEST_CONTACT             = "request_contact"
 OPTIONS                     = "options"
 MULTI_SELECT                = "multi_select"
 BUTTONS                     = "buttons"
+
+SEND_MESSAGE_ALL_USERS      = "Отправить сообщение всем пользователям"
+GET_ACTUAL_TABLE            = "Получить актуальную таблицу"

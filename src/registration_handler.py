@@ -11,6 +11,7 @@ from telegram import (
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS
 from telegram.constants import ParseMode
+from utils import get_actual_table
 from constants import *
 
 
@@ -140,10 +141,11 @@ class RegistrationFlow:
                 if user_nickname:
                     buttons = [button for button in buttons if button != LABELS[USERNAME]]
 
-            if state == REGISTERED and user_id in ADMIN_IDS:
-                print("[ADMIN] click Отправить сообщение")
-                if "Отправить сообщение всем пользователям" not in buttons:
-                    buttons.append("Отправить сообщение всем пользователям")
+            if user_id in ADMIN_IDS and state == REGISTERED:
+                if SEND_MESSAGE_ALL_USERS not in buttons:
+                    buttons.append(SEND_MESSAGE_ALL_USERS)
+                if GET_ACTUAL_TABLE not in buttons:
+                    buttons.append(GET_ACTUAL_TABLE)
 
             reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
         elif config.get(REQUEST_CONTACT):
@@ -221,9 +223,18 @@ class RegistrationFlow:
                 print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
                 await self.transition_state(update, context, EDIT)
                 return
-            if user_input == "Отправить сообщение всем пользователям" and user_id in ADMIN_IDS:
-                await self.transition_state(update, context, ADMIN_SEND_MESSAGE)
-                return
+            if user_id in ADMIN_IDS:
+                if user_input == SEND_MESSAGE_ALL_USERS:
+                    await self.transition_state(update, context, ADMIN_SEND_MESSAGE)
+                    return
+                if user_input == GET_ACTUAL_TABLE:
+                    file_path = get_actual_table()
+                    try:
+                        await context.bot.send_document(chat_id=user_id, document=open(file_path, "rb"))
+                        await update.message.reply_text("Файл отправлен успешно!")
+                    except Exception as e:
+                        await update.message.reply_text(f"Не удалось отправить файл: {e}")
+                    return
 
         if state == ADMIN_SEND_MESSAGE:
             if user_input == CANCEL:
