@@ -9,7 +9,7 @@ from telegram import (
 import telegram
 from telegram.ext import CallbackContext
 from user_storage import user_storage
-from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, ADMIN_IDS
+from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS
 from telegram.constants import ParseMode
 from constants import *
 
@@ -138,7 +138,7 @@ class RegistrationFlow:
 
                 # Убираем кнопку "Изменить ник", если ник уже установлен
                 if user_nickname:
-                    buttons = [button for button in buttons if button != "Никнейм"]
+                    buttons = [button for button in buttons if button != LABELS[USERNAME]]
 
             if state == REGISTERED and user_id in ADMIN_IDS:
                 print("[ADMIN] click Отправить сообщение")
