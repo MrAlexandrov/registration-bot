@@ -6,7 +6,7 @@ from constants import *
 load_dotenv()
 
 # Получаем токен бота из переменной окружения
-BOT_TOKEN = getenv('TEST_BOT_TOKEN')
+BOT_TOKEN = getenv('BOT_TOKEN')
 
 # BOT_TOKEN = getenv('RELEASE_BOT_TOKEN')
 ROOT_ID = int(getenv('ROOT_ID'))
