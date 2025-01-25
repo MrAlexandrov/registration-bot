@@ -204,6 +204,14 @@ class RegistrationFlow:
             )
             return
 
+        if OPTIONS in config:
+            print(f"[DEBUG] user send message while inline keyboard is active")
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="Пожалуйста, воспользуйся кнопками"
+            )
+            return
+
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
 
         # Обработка выбора действия (edit, registered)

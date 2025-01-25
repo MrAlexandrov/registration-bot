@@ -53,3 +53,9 @@ BUTTONS                     = "buttons"
 
 SEND_MESSAGE_ALL_USERS      = "Отправить сообщение всем пользователям"
 GET_ACTUAL_TABLE            = "Получить актуальную таблицу"
+
+POSITIONS                   = ["Вожатый", "Подменка", "Физрук", "Кружковод", "Фотограф", "Радист", "Культорг"]
+AGES                        = ["6-9", "10-12", "12-14", "14-16"]
+PERSENTS                    = ["0-25", "25-50", "50-75", "75-100"]
+EDUCATION_OPTIONS           = [BMSTU, OTHER_STUDY_PLACE, FINISHED, DO_NOT_STUDY]
+YES_NO                      = [YES, NO]
