@@ -11,6 +11,7 @@ from telegram import (
 from user_storage import user_storage
 from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS, TABLE_GETTERS
 from telegram.constants import ParseMode
+from message_formatter import MessageFormatter
 from utils import get_actual_table
 from constants import *
 
@@ -141,7 +142,7 @@ class RegistrationFlow:
                 if user_nickname:
                     buttons = [button for button in buttons if button != LABELS[USERNAME]]
 
-            if user_id in ADMIN_IDS or user_id in TABLE_GETTERS and state == REGISTERED:
+            if (user_id in ADMIN_IDS or user_id in TABLE_GETTERS) and state == REGISTERED:
                 if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
                     buttons.append(SEND_MESSAGE_ALL_USERS)
                 if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
@@ -178,7 +179,7 @@ class RegistrationFlow:
             config = self.get_admin_config_by_state(state)
 
             if state == ADMIN_SEND_MESSAGE:
-                user_input = update.message.text
+                user_input = MessageFormatter.get_escaped_text(update.message)
                 if user_input == CANCEL:
                     await self.transition_state(update, context, REGISTERED)
                     return
@@ -186,7 +187,7 @@ class RegistrationFlow:
                 print(f"all_users_id = {all_users_id}")
                 for current_user_id in all_users_id:
                     try:
-                        await context.bot.send_message(chat_id=current_user_id, text=update.message.text)
+                        await context.bot.send_message(chat_id=current_user_id, text=user_input, parse_mode=ParseMode.MARKDOWN_V2)
                     except:
                         print(f"[ERROR] cant sent message for user {current_user_id}")
                 await context.bot.send_message(chat_id=user_id, text=f"Сообщение было отправлено {len(all_users_id)} пользователям")
