@@ -9,7 +9,7 @@ from telegram import (
 # import telegram
 # from telegram.ext import CallbackContext
 from user_storage import user_storage
-from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS
+from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS, TABLE_GETTERS
 from telegram.constants import ParseMode
 from utils import get_actual_table
 from constants import *
@@ -88,7 +88,7 @@ class RegistrationFlow:
         # Находим конфигурацию состояния
         config = self.get_config_by_state(state)
         if not config:
-            if user_id in ADMIN_IDS:
+            if user_id in ADMIN_IDS or user_id:
                 config = self.get_admin_config_by_state(state)
             else:
                 print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
@@ -141,10 +141,10 @@ class RegistrationFlow:
                 if user_nickname:
                     buttons = [button for button in buttons if button != LABELS[USERNAME]]
 
-            if user_id in ADMIN_IDS and state == REGISTERED:
-                if SEND_MESSAGE_ALL_USERS not in buttons:
+            if user_id in ADMIN_IDS or user_id in TABLE_GETTERS and state == REGISTERED:
+                if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
                     buttons.append(SEND_MESSAGE_ALL_USERS)
-                if GET_ACTUAL_TABLE not in buttons:
+                if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
                     buttons.append(GET_ACTUAL_TABLE)
 
             reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
@@ -223,11 +223,11 @@ class RegistrationFlow:
                 print(f"[DEBUG] Пользователь {user_id} выбрал 'Изменить данные'.")
                 await self.transition_state(update, context, EDIT)
                 return
-            if user_id in ADMIN_IDS:
-                if user_input == SEND_MESSAGE_ALL_USERS:
+            if user_id in ADMIN_IDS or user_id in TABLE_GETTERS:
+                if user_id in ADMIN_IDS and user_input == SEND_MESSAGE_ALL_USERS:
                     await self.transition_state(update, context, ADMIN_SEND_MESSAGE)
                     return
-                if user_input == GET_ACTUAL_TABLE:
+                if user_id in TABLE_GETTERS and user_input == GET_ACTUAL_TABLE:
                     file_path = get_actual_table()
                     try:
                         await context.bot.send_document(chat_id=user_id, document=open(file_path, "rb"))

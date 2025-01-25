@@ -10,6 +10,7 @@ BOT_TOKEN = getenv('BOT_TOKEN')
 
 # BOT_TOKEN = getenv('RELEASE_BOT_TOKEN')
 ROOT_ID = int(getenv('ROOT_ID'))
+LENA_ID = int(getenv('LENA_ID'))
 
 if BOT_TOKEN is None:
     raise ValueError("Токен не найден! Убедитесь, что файл .env правильно настроен.")
@@ -19,6 +20,10 @@ if ROOT_ID is None:
 
 ADMIN_IDS = {
     ROOT_ID,
+}
+
+TABLE_GETTERS = ADMIN_IDS | {
+    LENA_ID,
 }
 
 from validators import (
