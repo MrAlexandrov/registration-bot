@@ -14,6 +14,7 @@ from telegram.constants import ParseMode
 from message_formatter import MessageFormatter
 from utils import get_actual_table
 from constants import *
+import copy
 
 
 class RegistrationFlow:
@@ -89,7 +90,7 @@ class RegistrationFlow:
         # Находим конфигурацию состояния
         config = self.get_config_by_state(state)
         if not config:
-            if user_id in ADMIN_IDS or user_id:
+            if user_id in ADMIN_IDS:
                 config = self.get_admin_config_by_state(state)
             else:
                 print(f"[ERROR] Конфигурация для состояния '{state}' не найдена.")
@@ -133,7 +134,19 @@ class RegistrationFlow:
                 multi_select=config.get(MULTI_SELECT, False)
             )
         elif BUTTONS in config:
-            buttons = config[BUTTONS]() if callable(config[BUTTONS]) else config[BUTTONS]
+            buttons = config[BUTTONS]() if callable(config[BUTTONS]) else copy.deepcopy(config[BUTTONS])
+
+            if state == REGISTERED:
+                if (user_id in ADMIN_IDS or user_id in TABLE_GETTERS):
+                    if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
+                        buttons.append(SEND_MESSAGE_ALL_USERS)
+                    if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
+                        buttons.append(GET_ACTUAL_TABLE)
+                else:
+                    if SEND_MESSAGE_ALL_USERS in buttons:
+                        buttons.remove(SEND_MESSAGE_ALL_USERS)
+                    if GET_ACTUAL_TABLE in buttons:
+                        buttons.remove(GET_ACTUAL_TABLE)
 
             if state == EDIT:
                 user_nickname = user_data.get(USERNAME, "")
@@ -141,12 +154,6 @@ class RegistrationFlow:
                 # Убираем кнопку "Изменить ник", если ник уже установлен
                 if user_nickname:
                     buttons = [button for button in buttons if button != LABELS[USERNAME]]
-
-            if (user_id in ADMIN_IDS or user_id in TABLE_GETTERS) and state == REGISTERED:
-                if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
-                    buttons.append(SEND_MESSAGE_ALL_USERS)
-                if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
-                    buttons.append(GET_ACTUAL_TABLE)
 
             reply_markup = ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
         elif config.get(REQUEST_CONTACT):
@@ -247,7 +254,7 @@ class RegistrationFlow:
 
         if state == ADMIN_SEND_MESSAGE:
             if user_input == CANCEL:
-                await self.transition_state(update, context)
+                await self.transition_state(update, context, REGISTERED) 
                 return
 
         if state == EDIT:
