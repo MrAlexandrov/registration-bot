@@ -23,13 +23,10 @@ clean:
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -exec rm -rf {} +
 
-docker-build:
-	docker-compose build
+up:
+	docker-compose build && docker-compose up -d && docker-compose logs -f
 
-docker-run:
-	docker-compose up -d
-
-docker-stop:
+down:
 	docker-compose down
 
 docker-clean:
