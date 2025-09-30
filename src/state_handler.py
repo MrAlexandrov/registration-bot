@@ -45,20 +45,21 @@ class StateHandler:
                 )
                 return
 
-        if state == USERNAME:
-            if await self.try_auto_collect_nickname(update, context, state, user_id):
-                return
-
-        if state in {OTHER_EDUCATION, STUDY_GROUP, RESCHEDULING_SESSION, RESCHEDULING_PRACTICE}:
-            if await self.try_skip_education_questions(update, context, state, user_id, user_data):
-                return
-
-        if state == WORK_PLACE:
-            if user_data[WORK] == NO:
-                self.user_storage.update_user(user_id, WORK_PLACE, user_data[WORK])
+        # Generic handling for auto-collect and skip-if
+        if AUTO_COLLECT in config:
+            value = config[AUTO_COLLECT](update)
+            if value:
+                self.user_storage.update_user(user_id, state, value)
+                await context.bot.send_message(chat_id=user_id, text=f"Твой ник @{value} сохранен автоматически.")
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return
+
+        if SKIP_IF in config and config[SKIP_IF](user_data):
+            self.user_storage.update_user(user_id, state, "skipped")
+            next_state = self.get_next_state(state)
+            await self.transition_state(update, context, next_state)
+            return
 
         self.user_storage.update_state(user_id, state)
         message = self.get_state_message(config, user_id)
@@ -90,9 +91,7 @@ class StateHandler:
                     if GET_ACTUAL_TABLE in buttons:
                         buttons.remove(GET_ACTUAL_TABLE)
             if state == EDIT:
-                user_nickname = user_data.get(USERNAME, "")
-                if user_nickname:
-                    buttons = [button for button in buttons if button != LABELS[USERNAME]]
+                buttons = [field[LABEL] for field in FIELDS if field.get(EDITABLE, True)] + [CANCEL]
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
         elif config.get(REQUEST_CONTACT):
             return ReplyKeyboardMarkup(
@@ -103,28 +102,6 @@ class StateHandler:
         else:
             return ReplyKeyboardRemove()
 
-    async def try_auto_collect_nickname(self, update, context, state, user_id):
-        username = update.message.from_user.username
-        if username:
-            self.user_storage.update_user(user_id, USERNAME, username)
-            await context.bot.send_message(chat_id=user_id, text=f"Твой ник @{username} сохранен автоматически.")
-            next_state = self.get_next_state(state)
-            await self.transition_state(update, context, next_state)
-            return True
-        return False
-
-    async def try_skip_education_questions(self, update, context, state, user_id, user_data):
-        if state == OTHER_EDUCATION and user_data[EDUCATION_CHOICE] != OTHER_STUDY_PLACE:
-            self.user_storage.update_user(user_id, OTHER_EDUCATION, NO)
-            next_state = self.get_next_state(state)
-            await self.transition_state(update, context, next_state)
-            return True
-        if state in {STUDY_GROUP, RESCHEDULING_SESSION, RESCHEDULING_PRACTICE} and (user_data[EDUCATION_CHOICE] == FINISHED or user_data[EDUCATION_CHOICE] == DO_NOT_STUDY):
-            self.user_storage.update_user(user_id, state, NO)
-            next_state = self.get_next_state(state)
-            await self.transition_state(update, context, next_state)
-            return True
-        return False
 
     def get_next_state(self, state):
         actual_state = state.replace("edit_", "")

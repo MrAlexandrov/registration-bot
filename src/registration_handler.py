@@ -126,11 +126,9 @@ class RegistrationFlow:
                 await context.bot.send_message(chat_id=user_id, text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование")
                 return
 
-            if field_config[STATE] == USERNAME:
-                user_data = self.user_storage.get_user(user_id)
-                if user_data.get(USERNAME):
-                    await context.bot.send_message(chat_id=user_id, text="Я автоматически собрал твой ник в Telegram, если у тебя действительно поменялся аккаунт, напиши людям, отвечающим за регистрацию, они решат вопрос")
-                    return
+            if not field_config.get(EDITABLE, True):
+                await context.bot.send_message(chat_id=user_id, text="Это поле нельзя редактировать.")
+                return
 
             await self.state_handler.transition_state(update, context, f"edit_{field_config[STATE]}")
 
