@@ -1,5 +1,7 @@
 .pytest_cache
+.vscode
 .venv
+venv
 .env
 __pycache__
 credentials.json
