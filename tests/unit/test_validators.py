@@ -7,47 +7,46 @@ from validators import (
     validate_probability
 )
 
-# Универсальная функция для загрузки тестовых данных
-def load_test_data(valid_filename, invalid_filename):
-    base_path = os.path.join(os.path.dirname(__file__), "data")
+@pytest.mark.parametrize("date, is_valid", [
+    ("01.01.2000", True),
+    ("31.12.1999", True),
+    ("15.06.2023", True),
+    ("2000-01-01", False),
+    ("32.12.2022", False),
+    ("abc", False),
+])
+def test_validate_date(date, is_valid):
+    valid, _ = validate_date(date)
+    assert valid == is_valid
 
-    def read_data(file_path):
-        with open(file_path, "r", encoding="utf-8") as file:
-            return [line.strip() for line in file if line.strip()]  # Убираем пустые строки
 
-    valid_data = [(item, True) for item in read_data(os.path.join(base_path, valid_filename))]
-    invalid_data = [(item, False) for item in read_data(os.path.join(base_path, invalid_filename))]
+@pytest.mark.parametrize("phone, is_valid", [
+    ("+79998887766", True),
+    ("89998887766", True),
+    ("79998887766", True),
+    ("9998887766", False),
+    ("abc", False),
+])
+def test_validate_phone(phone, is_valid):
+    valid, _ = validate_phone(phone)
+    assert valid == is_valid
 
-    return valid_data + invalid_data  # Объединяем в один список
 
-# ✅ Фикстура с путями к файлам (кеширует данные в pytest)
-@pytest.fixture(scope="module")
-def test_data():
-    return {
-        "dates": load_test_data("valid_dates.txt", "invalid_dates.txt"),
-        "phones": load_test_data("valid_phones.txt", "invalid_phones.txt"),
-        "emails": load_test_data("valid_emails.txt", "invalid_emails.txt"),
-        "probabilities": [
-            ("0", True), ("50", True), ("100", True),
-            ("-1", False), ("101", False), ("abc", False),
-        ],
-    }
+@pytest.mark.parametrize("email, is_valid", [
+    ("test@example.com", True),
+    ("test.test@example.co.uk", True),
+    ("test@example", False),
+    ("test", False),
+])
+def test_validate_email(email, is_valid):
+    valid, _ = validate_email(email)
+    assert valid == is_valid
 
-@pytest.mark.parametrize("date, expected", load_test_data("valid_dates.txt", "invalid_dates.txt"))
-def test_validate_date(date, expected):
-    assert validate_date(date) == expected
 
-@pytest.mark.parametrize("phone, expected", load_test_data("valid_phones.txt", "invalid_phones.txt"))
-def test_validate_phone(phone, expected):
-    assert validate_phone(phone) == expected
-
-@pytest.mark.parametrize("email, expected", load_test_data("valid_emails.txt", "invalid_emails.txt"))
-def test_validate_email(email, expected):
-    assert validate_email(email) == expected
-
-@pytest.mark.parametrize("probability, expected", [
+@pytest.mark.parametrize("probability, is_valid", [
     ("0", True), ("50", True), ("100", True),
     ("-1", False), ("101", False), ("abc", False),
 ])
-def test_validate_probability(probability, expected):
-    assert validate_probability(probability) == expected
+def test_validate_probability(probability, is_valid):
+    valid, _ = validate_probability(probability)
+    assert valid == is_valid

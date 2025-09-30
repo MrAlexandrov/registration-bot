@@ -12,13 +12,13 @@ def get_actual_table():
 
     conn.close()
 
+    excel_dir = "excel"
+    os.makedirs(excel_dir, exist_ok=True)
+
     file_name = f"database_{time.clock_gettime(0)}.xlsx"
+    file_path = os.path.join(excel_dir, file_name)
 
-    df.to_excel(file_name, index=False)
-
-    new_file_name = f"./excel/{file_name}"
-
-    os.replace(file_name, new_file_name)
+    df.to_excel(file_path, index=False)
 
     print("✅ Данные экспортированы")
-    return new_file_name
+    return file_path

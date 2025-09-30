@@ -4,21 +4,31 @@ from formatters import format_phone_db
 
 def validate_phone(phone):
     phone = format_phone_db(phone)
-    # Проверяем, соответствует ли номер формату
     pattern = r'^(7)\d{10}$'
-    return bool(re.match(pattern, phone))
+    if not re.match(pattern, phone):
+        return False, "Неверный формат номера телефона. Пожалуйста, введите номер в формате +7 (XXX) XXX-XX-XX или 8 (XXX) XXX-XX-XX."
+    return True, None
+
 
 def validate_email(email):
     """Проверяет, что это корректный email."""
-    return bool(re.match(r"^[^@]+@[^@]+\.[^@]+$", email))
+    if not re.match(r"^[^@]+@[^@]+\.[^@]+$", email):
+        return False, "Неверный формат email. Пожалуйста, введите корректный email."
+    return True, None
+
 
 def validate_date(date):
     pattern = r'^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(19|20)\d{2}$'
-    return bool(re.match(pattern, date))
+    if not re.match(pattern, date):
+        return False, "Неверный формат даты. Пожалуйста, введите дату в формате ДД.ММ.ГГГГ."
+    return True, None
+
 
 def validate_probability(probability):
     try:
-        probability = int(probability)
-        return 0 <= probability <= 100
+        prob = int(probability)
+        if not (0 <= prob <= 100):
+            return False, "Вероятность должна быть числом от 0 до 100."
     except ValueError:
-        return False
+        return False, "Вероятность должна быть числом."
+    return True, None

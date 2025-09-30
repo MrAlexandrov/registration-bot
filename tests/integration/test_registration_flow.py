@@ -9,8 +9,9 @@ from user_storage import user_storage
 @pytest.fixture(autouse=True)
 def reset_user_storage():
     """Очищает базу данных перед каждым тестом."""
-    user_storage.cursor.execute("DELETE FROM users")
-    user_storage.connection.commit()
+    with user_storage._get_connection() as conn:
+        conn.execute("DELETE FROM users")
+        conn.commit()
 
 
 @pytest.fixture
@@ -50,6 +51,7 @@ async def test_start_command(registration_flow, mock_user, mock_chat, mock_conte
     mock_update = MagicMock(spec=Update)
     mock_update.effective_user = mock_user
     mock_update.message = create_mock_message(mock_chat, mock_user, text="/start")
+    mock_update.callback_query = None
 
     await registration_flow.handle_command(mock_update, mock_context)
 
@@ -67,20 +69,47 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
 
     test_data = {
         "name": "Иван",
-        "phone": "71234567890",
-        "email": "test@example.com",
         "birth_date": "10.03.2002",
-        "probability_first": "80",
-        "probability_second": "50",
+        "phone": "71234567890",
+        "username": "testuser",
+        "email": "test@example.com",
+        "position": "Вожатый",
+        "desired_age": "6-9",
+        "probability_instructive": "0-25",
+        "probability_first": "25-50",
+        "probability_second": "50-75",
+        "education_choice": "МГТУ им. Баумана",
+        "study_group": "ИУ7-51",
+        "work": "Да",
+        "work_place": "Yandex",
+        "diplom": "Да",
+        "rescheduling_session": "Да",
+        "rescheduling_practice": "Нет",
+        "medical_book": "Да",
     }
 
     for field, value in test_data.items():
         user_storage.update_state(user_id, field)
         mock_update = MagicMock(spec=Update)
         mock_update.effective_user = mock_user
-        mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
+        mock_update.callback_query = None
 
-        await registration_flow.handle_input(mock_update, mock_context)
+        # For fields with options, we need to simulate an inline query
+        if field in ["position", "desired_age", "probability_instructive", "probability_first", "probability_second", "education_choice", "work", "diplom", "rescheduling_session", "rescheduling_practice", "medical_book"]:
+            # Step 1: Select an option
+            mock_update.callback_query = AsyncMock()
+            mock_update.callback_query.data = f"select|{value}"
+            mock_update.callback_query.from_user = mock_user
+            mock_update.callback_query.message = create_mock_message(mock_chat, mock_user, text=value)
+            await registration_flow.handle_inline_query(mock_update, mock_context)
+
+            # Step 2: Click "Done"
+            mock_update.callback_query.data = "done"
+            await registration_flow.handle_inline_query(mock_update, mock_context)
+        else:
+            mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
+            await registration_flow.handle_input(mock_update, mock_context)
+
         assert user_storage.get_user(user_id)[field] == value
 
     assert user_storage.get_user(user_id)["state"] == "registered"
@@ -97,18 +126,21 @@ async def test_editing_data(registration_flow, mock_user, mock_chat, mock_contex
     mock_update = MagicMock(spec=Update)
     mock_update.effective_user = mock_user
     mock_update.message = create_mock_message(mock_chat, mock_user, text="Изменить данные")
+    mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
     assert user_storage.get_user(user_id)["state"] == "edit"
 
     # Выбор редактирования имени
     mock_update.message = create_mock_message(mock_chat, mock_user, text="Имя")
+    mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
     assert user_storage.get_user(user_id)["state"] == "edit_name"
 
     # Ввод нового имени
     mock_update.message = create_mock_message(mock_chat, mock_user, text="Алексей")
+    mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
     assert user_storage.get_user(user_id)["name"] == "Алексей"
@@ -126,11 +158,12 @@ async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_conte
     mock_update = MagicMock(spec=Update)
     mock_update.effective_user = mock_user
     mock_update.message = create_mock_message(mock_chat, mock_user, contact=contact)
+    mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
 
     assert user_storage.get_user(user_id)["phone"] == "79998887766"
-    assert user_storage.get_user(user_id)["state"] == "email"
+    assert user_storage.get_user(user_id)["state"] == "username"
 
 
 @pytest.mark.asyncio
@@ -146,4 +179,7 @@ async def test_invalid_email_input(registration_flow, mock_user, mock_chat, mock
 
     await registration_flow.handle_input(mock_update, mock_context)
 
-    assert user_storage.get_user(user_id)["state"] == "email"  # Состояние не изменилось
+    assert user_storage.get_user(user_id)["state"] == "email"
+    mock_context.bot.send_message.assert_called_with(
+        chat_id=user_id, text="Неверный формат email. Пожалуйста, введите корректный email."
+    )
