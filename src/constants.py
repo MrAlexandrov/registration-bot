@@ -24,6 +24,17 @@ EDIT                        = "edit"
 
 ADMIN_SEND_MESSAGE          = "admin_send_message"
 
+# Feedback system states
+ADMIN_FEEDBACK_MENU         = "admin_feedback_menu"
+CREATE_SURVEY_NAME          = "create_survey_name"
+CREATE_SURVEY_ADD_QUESTION  = "create_survey_add_question"
+CREATE_SURVEY_QUESTION_TEXT = "create_survey_question_text"
+CREATE_SURVEY_QUESTION_TYPE = "create_survey_question_type"
+CREATE_SURVEY_QUESTION_OPTIONS = "create_survey_question_options"
+ADMIN_SELECT_SURVEY_TO_SEND = "admin_select_survey_to_send"
+ADMIN_VIEW_SURVEY_RESULTS   = "admin_view_survey_results"
+ADMIN_FILTER_USERS          = "admin_filter_users"
+
 # buttons names
 YES                         = "Да"
 NO                          = "Нет"
@@ -36,6 +47,24 @@ FINISHED                    = "Закончил(а)"
 DO_NOT_STUDY                = "Не учусь"
 
 CHANGE_DATA                 = "Изменить данные"
+
+CREATE_SURVEY               = "Создать опрос"
+SEND_SURVEY                 = "Отправить опрос"
+VIEW_RESULTS                = "Посмотреть результаты"
+ADD_QUESTION                = "Добавить вопрос"
+FINISH_SURVEY_CREATION      = "Завершить создание"
+
+SEND_TO_ALL                 = "Отправить всем"
+SEND_TO_FILTERED            = "Отправить отфильтрованным"
+
+SINGLE_CHOICE               = "Один вариант ответа"
+MULTIPLE_CHOICE             = "Несколько вариантов ответа"
+TEXT_INPUT                  = "Свободный ввод"
+
+# Question types
+Q_SINGLE_CHOICE             = "single_choice"
+Q_MULTIPLE_CHOICE           = "multiple_choice"
+Q_TEXT_INPUT                = "text_input"
 
 # help constants
 STATE                       = "state"
@@ -56,6 +85,9 @@ SKIP_IF                     = "skip_if"
 
 SEND_MESSAGE_ALL_USERS      = "Отправить сообщение всем пользователям"
 GET_ACTUAL_TABLE            = "Получить актуальную таблицу"
+
+FEEDBACK_BUTTONS            = [CREATE_SURVEY, SEND_SURVEY, VIEW_RESULTS]
+QUESTION_TYPE_OPTIONS       = [SINGLE_CHOICE, MULTIPLE_CHOICE, TEXT_INPUT]
 
 POSITIONS                   = ["Вожатый", "Подменка", "Физрук", "Кружковод", "Фотограф", "Радист", "Культорг"]
 AGES                        = ["6-9", "10-12", "12-14", "14-16"]

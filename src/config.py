@@ -49,7 +49,16 @@ class Config:
             RESCHEDULING_PRACTICE: "Нужен ли тебе перенос практики?",
             MEDICAL_BOOK: "Есть ли у тебя медицинская книжка?",
             EDIT: "Что хочешь изменить?",
-            ADMIN_SEND_MESSAGE: "Напиши сообщение, которое хочешь отправить всем пользователям"
+            ADMIN_SEND_MESSAGE: "Напиши сообщение, которое хочешь отправить всем пользователям",
+            ADMIN_FEEDBACK_MENU: "Меню обратной связи",
+            CREATE_SURVEY_NAME: "Введи название опроса. Оно будет видно только администраторам.",
+            CREATE_SURVEY_ADD_QUESTION: "Теперь добавь вопросы к опросу.",
+            CREATE_SURVEY_QUESTION_TEXT: "Введи текст вопроса.",
+            CREATE_SURVEY_QUESTION_TYPE: "Выбери тип вопроса.",
+            CREATE_SURVEY_QUESTION_OPTIONS: "Введи варианты ответов через запятую (например: Да, Нет, Не знаю).",
+            ADMIN_SELECT_SURVEY_TO_SEND: "Выбери опрос, который хочешь отправить.",
+            ADMIN_VIEW_SURVEY_RESULTS: "Выбери опрос, результаты которого хочешь посмотреть.",
+            ADMIN_FILTER_USERS: "Кому отправить опрос?",
         }
 
         self.labels = {
@@ -109,13 +118,22 @@ class Config:
             return message
 
         return [
-            {STATE: REGISTERED, MESSAGE: generate_registered_message(), BUTTONS: [CHANGE_DATA]},
+            {STATE: REGISTERED, MESSAGE: generate_registered_message(), BUTTONS: [CHANGE_DATA, CREATE_SURVEY]},
             {STATE: EDIT, MESSAGE: self.messages[EDIT], BUTTONS: lambda: [field[LABEL] for field in self.fields] + [CANCEL]},
         ]
 
     def _get_admin_states(self):
         return [
             {STATE: ADMIN_SEND_MESSAGE, MESSAGE: self.messages[ADMIN_SEND_MESSAGE], BUTTONS: [CANCEL]},
+            {STATE: ADMIN_FEEDBACK_MENU, MESSAGE: self.messages[ADMIN_FEEDBACK_MENU], BUTTONS: FEEDBACK_BUTTONS + [CANCEL]},
+            {STATE: CREATE_SURVEY_NAME, MESSAGE: self.messages[CREATE_SURVEY_NAME], BUTTONS: [CANCEL]},
+            {STATE: CREATE_SURVEY_ADD_QUESTION, MESSAGE: self.messages[CREATE_SURVEY_ADD_QUESTION], BUTTONS: [ADD_QUESTION, FINISH_SURVEY_CREATION]},
+            {STATE: CREATE_SURVEY_QUESTION_TEXT, MESSAGE: self.messages[CREATE_SURVEY_QUESTION_TEXT], BUTTONS: [CANCEL]},
+            {STATE: CREATE_SURVEY_QUESTION_TYPE, MESSAGE: self.messages[CREATE_SURVEY_QUESTION_TYPE], OPTIONS: QUESTION_TYPE_OPTIONS},
+            {STATE: CREATE_SURVEY_QUESTION_OPTIONS, MESSAGE: self.messages[CREATE_SURVEY_QUESTION_OPTIONS], BUTTONS: [CANCEL]},
+            {STATE: ADMIN_SELECT_SURVEY_TO_SEND, MESSAGE: self.messages[ADMIN_SELECT_SURVEY_TO_SEND], BUTTONS: [SEND_TO_ALL, SEND_TO_FILTERED, CANCEL]},
+            {STATE: ADMIN_VIEW_SURVEY_RESULTS, MESSAGE: self.messages[ADMIN_VIEW_SURVEY_RESULTS], BUTTONS: [CANCEL]},
+            {STATE: ADMIN_FILTER_USERS, MESSAGE: self.messages[ADMIN_FILTER_USERS], BUTTONS: [CANCEL]},
         ]
 
 

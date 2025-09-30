@@ -70,4 +70,13 @@ class UserStorage:
             rows = cursor.fetchall()
             return [row[0] for row in rows]
 
+    def find_users_by_name(self, name_query):
+        """Ищет пользователей по части ФИО."""
+        sql = "SELECT telegram_id FROM users WHERE name LIKE ?"
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql, (f"%{name_query}%",))
+            rows = cursor.fetchall()
+            return [row[0] for row in rows]
+
 user_storage = UserStorage()
