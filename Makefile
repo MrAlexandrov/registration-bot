@@ -24,26 +24,18 @@ clean:
 	find . -type d -name '__pycache__' -exec rm -rf {} +
 
 docker-build:
-	docker build -t $(IMAGE_NAME) -f Dockerfile .
+	docker-compose build
 
 docker-run:
-	docker run -d -it \
-		--name $(CONTAINER_NAME) \
-		--env-file .env \
-		$(IMAGE_NAME)
+	docker-compose up -d
 
 docker-stop:
-	docker stop $(CONTAINER_NAME)
-
-docker-remove:
-	docker rm $(CONTAINER_NAME)
+	docker-compose down
 
 docker-clean:
-	docker rm -f $(CONTAINER_NAME) || true
-	docker rmi $(IMAGE_NAME) || true
-	docker rmi $(TEST_IMAGE_NAME) || true
+	docker-compose down --rmi all
 
-.PHONY: install run docker-build docker-run docker-stop docker-remove help
+.PHONY: install run docker-build docker-run docker-stop docker-clean help
 
 
 
