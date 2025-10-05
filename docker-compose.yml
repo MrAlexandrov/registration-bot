@@ -7,4 +7,6 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/app
+      - ./data:/app/data
+      - ./excel:/app/excel
+    restart: unless-stopped
