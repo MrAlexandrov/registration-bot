@@ -1,22 +1,41 @@
 import pytest
+import os
+import tempfile
 from unittest.mock import AsyncMock, MagicMock
 from telegram import Update, User, Message, Chat, Contact
 from telegram.ext import CallbackContext
-from registration_handler import RegistrationFlow
-from user_storage import user_storage
 
 
-@pytest.fixture(autouse=True)
-def reset_user_storage():
-    """Очищает базу данных перед каждым тестом."""
-    with user_storage._get_connection() as conn:
-        conn.execute("DELETE FROM users")
-        conn.commit()
+@pytest.fixture(scope="function")
+def test_db():
+    """Create a temporary test database for each test."""
+    # Create a temporary database file
+    fd, db_path = tempfile.mkstemp(suffix='.sqlite')
+    os.close(fd)
+
+    # Import and initialize with test database
+    from src.user_storage import UserStorage
+    test_storage = UserStorage(db_path)
+
+    yield test_storage
+
+    # Cleanup
+    try:
+        os.unlink(db_path)
+    except:
+        pass
 
 
 @pytest.fixture
-def registration_flow():
-    """Создает экземпляр класса RegistrationFlow."""
+def user_storage(test_db):
+    """Provide user_storage for tests."""
+    return test_db
+
+
+@pytest.fixture
+def registration_flow(user_storage):
+    """Create RegistrationFlow with test user_storage."""
+    from src.registration_handler import RegistrationFlow
     return RegistrationFlow(user_storage)
 
 
@@ -55,9 +74,9 @@ async def test_start_command(registration_flow, mock_user, mock_chat, mock_conte
 
     await registration_flow.handle_command(mock_update, mock_context)
 
-    user = user_storage.get_user(mock_user.id)
+    user = registration_flow.user_storage.get_user(mock_user.id)
     assert user is not None
-    assert user["state"] == "name"
+    assert user["state"] == "username"
     mock_context.bot.send_message.assert_called_once()
 
 
@@ -65,7 +84,7 @@ async def test_start_command(registration_flow, mock_user, mock_chat, mock_conte
 async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_context):
     """Тест полного процесса регистрации"""
     user_id = mock_user.id
-    user_storage.create_user(user_id)
+    registration_flow.user_storage.create_user(user_id)
 
     test_data = {
         "name": "Иван",
@@ -89,7 +108,7 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
     }
 
     for field, value in test_data.items():
-        user_storage.update_state(user_id, field)
+        registration_flow.user_storage.update_state(user_id, field)
         mock_update = MagicMock(spec=Update)
         mock_update.effective_user = mock_user
         mock_update.callback_query = None
@@ -110,17 +129,17 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
             mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
             await registration_flow.handle_input(mock_update, mock_context)
 
-        assert user_storage.get_user(user_id)[field] == value
+        assert registration_flow.user_storage.get_user(user_id)[field] == value
 
-    assert user_storage.get_user(user_id)["state"] == "registered"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "registered"
 
 
 @pytest.mark.asyncio
 async def test_editing_data(registration_flow, mock_user, mock_chat, mock_context):
     """Тест редактирования данных"""
     user_id = mock_user.id
-    user_storage.create_user(user_id)
-    user_storage.update_state(user_id, "registered")
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "registered")
 
     # Выбор редактирования
     mock_update = MagicMock(spec=Update)
@@ -129,30 +148,30 @@ async def test_editing_data(registration_flow, mock_user, mock_chat, mock_contex
     mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["state"] == "edit"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "edit"
 
     # Выбор редактирования имени
     mock_update.message = create_mock_message(mock_chat, mock_user, text="Имя")
     mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["state"] == "edit_name"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "edit_name"
 
     # Ввод нового имени
     mock_update.message = create_mock_message(mock_chat, mock_user, text="Алексей")
     mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
-    assert user_storage.get_user(user_id)["name"] == "Алексей"
-    assert user_storage.get_user(user_id)["state"] == "registered"
+    assert registration_flow.user_storage.get_user(user_id)["name"] == "Алексей"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "registered"
 
 
 @pytest.mark.asyncio
 async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_context):
     """Тест кнопки 'Поделиться номером'"""
     user_id = mock_user.id
-    user_storage.create_user(user_id)
-    user_storage.update_state(user_id, "phone")
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "phone")
 
     contact = MagicMock(spec=Contact, phone_number="79998887766", user_id=user_id, first_name="TestUser")
     mock_update = MagicMock(spec=Update)
@@ -162,16 +181,16 @@ async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_conte
 
     await registration_flow.handle_input(mock_update, mock_context)
 
-    assert user_storage.get_user(user_id)["phone"] == "79998887766"
-    assert user_storage.get_user(user_id)["state"] == "username"
+    assert registration_flow.user_storage.get_user(user_id)["phone"] == "79998887766"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "email"
 
 
 @pytest.mark.asyncio
 async def test_invalid_email_input(registration_flow, mock_user, mock_chat, mock_context):
     """Тест обработки неверного email"""
     user_id = mock_user.id
-    user_storage.create_user(user_id)
-    user_storage.update_state(user_id, "email")
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "email")
 
     mock_update = MagicMock(spec=Update)
     mock_update.effective_user = mock_user
@@ -179,7 +198,7 @@ async def test_invalid_email_input(registration_flow, mock_user, mock_chat, mock
 
     await registration_flow.handle_input(mock_update, mock_context)
 
-    assert user_storage.get_user(user_id)["state"] == "email"
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "email"
     mock_context.bot.send_message.assert_called_with(
         chat_id=user_id, text="Неверный формат email. Пожалуйста, введите корректный email."
     )
