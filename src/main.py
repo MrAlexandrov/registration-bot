@@ -1,8 +1,7 @@
 import logging
-import logging
-from registration_handler import RegistrationFlow
-from user_storage import user_storage
-from settings import BOT_TOKEN
+from .registration_handler import RegistrationFlow
+from .user_storage import user_storage
+from .settings import BOT_TOKEN
 from telegram.ext import (
     Application,
     CommandHandler,

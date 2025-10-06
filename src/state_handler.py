@@ -6,12 +6,12 @@ from telegram import (
     InlineKeyboardButton,
 )
 from telegram.constants import ParseMode
-from settings import FIELDS, POST_REGISTRATION_STATES, ADMIN_STATES, LABELS, ADMIN_IDS, TABLE_GETTERS
-from constants import *
+from .settings import SURVEY_CONFIG, ADMIN_IDS, TABLE_GETTERS
+from .constants import *
 import copy
 import logging
-from utils import get_actual_table
-from message_formatter import MessageFormatter
+from .utils import get_actual_table
+from .message_formatter import MessageFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 class StateHandler:
     def __init__(self, user_storage):
         self.user_storage = user_storage
-        self.steps = [field[STATE] for field in FIELDS]
-        self.states_config = {state[STATE]: state for state in POST_REGISTRATION_STATES}
-        self.admin_states_config = {state[STATE]: state for state in ADMIN_STATES}
+        self.steps = [field.field_name for field in SURVEY_CONFIG.fields]
+        self.states_config = {state[STATE]: state for state in SURVEY_CONFIG.post_registration_states}
+        self.admin_states_config = {state[STATE]: state for state in SURVEY_CONFIG.admin_states}
 
     async def transition_state(self, update, context, state):
         if update.callback_query:
@@ -46,17 +46,23 @@ class StateHandler:
                 return
 
         # Generic handling for auto-collect and skip-if
-        if AUTO_COLLECT in config:
-            value = config[AUTO_COLLECT](update)
+        # Use actual field name (without "edit_" prefix) for database operations
+        actual_field_name = state.replace("edit_", "")
+
+        # Для SurveyField используем атрибуты, для словарей - ключи
+        auto_collect = config.auto_collect if hasattr(config, 'auto_collect') else config.get(AUTO_COLLECT)
+        if auto_collect:
+            value = auto_collect(update)
             if value:
-                self.user_storage.update_user(user_id, state, value)
-                await context.bot.send_message(chat_id=user_id, text=f"Твой ник @{value} сохранен автоматически.")
+                self.user_storage.update_user(user_id, actual_field_name, value)
                 next_state = self.get_next_state(state)
                 await self.transition_state(update, context, next_state)
                 return
 
-        if SKIP_IF in config and config[SKIP_IF](user_data):
-            self.user_storage.update_user(user_id, state, "skipped")
+        # Для SurveyField используем атрибуты, для словарей - ключи
+        skip_if = config.skip_if if hasattr(config, 'skip_if') else config.get(SKIP_IF)
+        if skip_if and skip_if(user_data):
+            self.user_storage.update_user(user_id, actual_field_name, "skipped")
             next_state = self.get_next_state(state)
             await self.transition_state(update, context, next_state)
             return
@@ -70,15 +76,23 @@ class StateHandler:
 
     def get_reply_markup(self, config, user_id, state, user_data):
         actual_field_name = state.replace("edit_", "")
-        if OPTIONS in config:
+        # Для SurveyField используем атрибуты, для словарей - ключи
+        if hasattr(config, 'options'):
+            options = config.options
+        else:
+            options = config.get(OPTIONS) if isinstance(config, dict) else None
+
+        if options:
             selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
             return self.create_inline_keyboard(
-                config[OPTIONS],
+                options,
                 selected_options=selected_options
             )
-        elif BUTTONS in config:
-            buttons = config[BUTTONS]() if callable(config[BUTTONS]) else copy.deepcopy(config[BUTTONS])
+        # Для словарей используем ключи (SurveyField не имеет buttons)
+        elif isinstance(config, dict) and BUTTONS in config:
+            buttons_value = config[BUTTONS]
+            buttons = buttons_value() if callable(buttons_value) else copy.deepcopy(buttons_value)
             if state == REGISTERED:
                 if (user_id in ADMIN_IDS or user_id in TABLE_GETTERS):
                     if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
@@ -91,9 +105,10 @@ class StateHandler:
                     if GET_ACTUAL_TABLE in buttons:
                         buttons.remove(GET_ACTUAL_TABLE)
             if state == EDIT:
-                buttons = [field[LABEL] for field in FIELDS if field.get(EDITABLE, True)] + [CANCEL]
+                buttons = [field.label for field in SURVEY_CONFIG.get_editable_fields()] + [CANCEL]
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
-        elif config.get(REQUEST_CONTACT):
+        # Для SurveyField используем атрибуты, для словарей - get
+        elif (hasattr(config, 'request_contact') and config.request_contact) or (isinstance(config, dict) and config.get(REQUEST_CONTACT)):
             return ReplyKeyboardMarkup(
                 [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]],
                 resize_keyboard=True,
@@ -117,13 +132,13 @@ class StateHandler:
         logger.debug(f"Searching for configuration for state '{state}'")
         if state.startswith("edit_"):
             original_field_name = state.replace("edit_", "")
-            config = next((f for f in FIELDS if f[STATE] == original_field_name), None)
+            config = SURVEY_CONFIG.get_field_by_name(original_field_name)
             if config:
                 logger.debug(f"Generated configuration for edit state: {config}")
             else:
                 logger.error(f"Configuration for edit state '{state}' not found")
             return config
-        config = next((f for f in FIELDS if f[STATE] == state), None) or self.states_config.get(state)
+        config = SURVEY_CONFIG.get_field_by_name(state) or self.states_config.get(state)
         if config:
             logger.debug(f"Found configuration for state '{state}': {config}")
         else:
@@ -132,7 +147,7 @@ class StateHandler:
 
     def get_admin_config_by_state(self, state):
         logger.debug(f"Searching for admin configuration for state '{state}'")
-        config = next((f for f in ADMIN_STATES if f[STATE] == state), None) or self.admin_states_config.get(state)
+        config = self.admin_states_config.get(state)
         if config:
             logger.debug(f"Found admin configuration for state '{state}': {config}")
         else:
@@ -140,24 +155,38 @@ class StateHandler:
         return config
 
     def get_state_message(self, config, user_id):
-        logger.debug(f"Formatting message for state '{config[STATE]}'")
-        if config[STATE] == REGISTERED:
+        # Для SurveyField используем field_name, для словарей - STATE
+        state_name = config.field_name if hasattr(config, 'field_name') else config[STATE]
+        logger.debug(f"Formatting message for state '{state_name}'")
+        if state_name == REGISTERED:
             return self.get_registered_message(config, user_id)
-        return config[MESSAGE]
+        # Для SurveyField используем message, для словарей - MESSAGE
+        return config.message if hasattr(config, 'message') else config[MESSAGE]
 
     def get_registered_message(self, config, user_id):
-        if config[STATE] != REGISTERED:
-            logger.error(f"get_registered_message should only be used for the 'registered' state, current state = {config[STATE]}")
+        state_name = config.field_name if hasattr(config, 'field_name') else config[STATE]
+        if state_name != REGISTERED:
+            logger.error(f"get_registered_message should only be used for the 'registered' state, current state = {state_name}")
         user = self.user_storage.get_user(user_id)
         logger.debug(f"User data from database: {user}")
-        user_data = {
-            field[STATE]: field[DISPLAY_FORMATTER](user.get(field[STATE], "Не указано"))
-            if DISPLAY_FORMATTER in field and callable(field[DISPLAY_FORMATTER])
-            else user.get(field[STATE], "Не указано")
-            for field in FIELDS
-        }
-        logger.debug(f"Prepared data for substitution: {user_data}")
-        return config[MESSAGE].format(**user_data)
+
+        # Получаем message из конфига
+        message = config.message if hasattr(config, 'message') else config[MESSAGE]
+
+        # Проверяем, является ли message функцией (новая система) или строкой (старая система)
+        if callable(message):
+            # Новая система - вызываем функцию с данными пользователя
+            return message(user)
+        else:
+            # Старая система - форматируем строку
+            user_data = {
+                field.field_name: field.display_formatter(user.get(field.field_name, "Не указано"))
+                if field.display_formatter and callable(field.display_formatter)
+                else user.get(field.field_name, "Не указано")
+                for field in SURVEY_CONFIG.fields
+            }
+            logger.debug(f"Prepared data for substitution: {user_data}")
+            return message.format(**user_data)
 
     def create_inline_keyboard(self, options, selected_options=None):
         selected_options = selected_options or []

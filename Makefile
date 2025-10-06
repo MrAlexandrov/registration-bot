@@ -11,7 +11,7 @@ install:
 	pip install -r requirements.txt
 
 run:
-	python3 src/main.py
+	python3 -m src.main
 
 test:
 	PYTHONPATH=src pytest tests

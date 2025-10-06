@@ -2,14 +2,14 @@ from telegram import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
-from user_storage import user_storage
-from settings import FIELDS, ADMIN_IDS, TABLE_GETTERS
+from .user_storage import user_storage
+from .settings import SURVEY_CONFIG, ADMIN_IDS, TABLE_GETTERS
 from telegram.constants import ParseMode
-from message_formatter import MessageFormatter
-from utils import get_actual_table
+from .message_formatter import MessageFormatter
+from .utils import get_actual_table
 import logging
-from constants import *
-from state_handler import StateHandler
+from .constants import *
+from .state_handler import StateHandler
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ class RegistrationFlow:
     def __init__(self, user_storage):
         self.user_storage = user_storage
         self.state_handler = StateHandler(user_storage)
-        self.steps = [field[STATE] for field in FIELDS]
+        self.steps = [field.field_name for field in SURVEY_CONFIG.fields]
 
     async def handle_command(self, update, context):
         """Обрабатывает команды, такие как /start."""
@@ -58,7 +58,9 @@ class RegistrationFlow:
             )
             return
 
-        if OPTIONS in config:
+        # Проверяем наличие options для SurveyField или словаря
+        has_options = (hasattr(config, 'options') and config.options) or (isinstance(config, dict) and OPTIONS in config)
+        if has_options:
             logger.debug("User sent message while inline keyboard is active")
             await context.bot.send_message(
                 chat_id=user_id,
@@ -68,7 +70,8 @@ class RegistrationFlow:
 
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
 
-        if BUTTONS in config:
+        # Проверяем наличие buttons (только для словарей, SurveyField не имеет buttons)
+        if isinstance(config, dict) and BUTTONS in config:
             await self.process_action_input(update, context, state, user_input)
             return
 
@@ -126,24 +129,24 @@ class RegistrationFlow:
                 await context.bot.send_message(chat_id=user_id, text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование")
                 return
 
-            if not field_config.get(EDITABLE, True):
+            if not field_config.editable:
                 await context.bot.send_message(chat_id=user_id, text="Это поле нельзя редактировать.")
                 return
 
-            await self.state_handler.transition_state(update, context, f"edit_{field_config[STATE]}")
+            await self.state_handler.transition_state(update, context, f"edit_{field_config.field_name}")
 
     def apply_db_formatter(self, field_name, value):
         """Применяет форматтер для базы данных, если он указан в конфиге."""
-        field_config = next((f for f in FIELDS if f[STATE] == field_name), None)
-        if field_config and "db_formatter" in field_config:
-            return field_config["db_formatter"](value)
+        field_config = SURVEY_CONFIG.get_field_by_name(field_name)
+        if field_config and field_config.db_formatter:
+            return field_config.db_formatter(value)
         return value
 
     async def process_data_input(self, update, context, state, user_input):
         """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
         user_id = update.effective_user.id
         actual_state = state.replace("edit_", "")
-        field_config = next((f for f in FIELDS if f[STATE] == actual_state), None)
+        field_config = SURVEY_CONFIG.get_field_by_name(actual_state)
 
         if not field_config:
             logger.error(f"Field '{actual_state}' not found for user {user_id}")
@@ -154,11 +157,11 @@ class RegistrationFlow:
             )
             return
 
-        if field_config.get(REQUEST_CONTACT) and update.message.contact:
+        if field_config.request_contact and update.message.contact:
             user_input = update.message.contact.phone_number
 
-        if field_config.get(VALIDATOR):
-            is_valid, error_message = field_config[VALIDATOR](user_input)
+        if field_config.validator:
+            is_valid, error_message = field_config.validator(user_input)
             if not is_valid:
                 await context.bot.send_message(chat_id=user_id, text=error_message)
                 return
@@ -171,7 +174,7 @@ class RegistrationFlow:
 
     def get_config_by_label(self, label):
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
-        return next((f for f in FIELDS if f.get(LABEL) == label), None)
+        return SURVEY_CONFIG.get_field_by_label(label)
 
     async def clear_inline_keyboard(self, update):
         """Удаляет только инлайн-клавиатуру, оставляя текст сообщения."""
@@ -192,7 +195,7 @@ class RegistrationFlow:
         state = user[STATE]
         actual_field_name = state.replace("edit_", "")
         field_config = self.state_handler.get_config_by_state(actual_field_name)
-        is_multi_select = field_config.get(MULTI_SELECT, False)
+        is_multi_select = field_config.multi_select if field_config else False
         selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
 
         if action == "select":
@@ -206,7 +209,7 @@ class RegistrationFlow:
 
             self.user_storage.update_user(user_id, actual_field_name, ", ".join(selected_options))
             reply_markup = self.state_handler.create_inline_keyboard(
-                field_config[OPTIONS],
+                field_config.options,
                 selected_options=selected_options
             )
             if query.message.reply_markup != reply_markup:
