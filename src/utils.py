@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def get_actual_table():
-    db_path = "./database.sqlite"
+    db_path = "data/database.sqlite"
     conn = sqlite3.connect(db_path)
 
     query = "SELECT * FROM users"
