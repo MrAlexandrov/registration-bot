@@ -132,184 +132,184 @@ class RegistrationSurveyConfig:
                 editable=True
             ),
 
-            # SurveyField(
-            #     field_name="phone",
-            #     label="Телефон",
-            #     message="Напиши свой номер телефона или поделись им из Telegram",
-            #     validator=validate_phone,
-            #     db_formatter=format_phone_db,
-            #     display_formatter=format_phone_display,
-            #     request_contact=True,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="phone",
+                label="Телефон",
+                message="Напиши свой номер телефона или поделись им из Telegram",
+                validator=validate_phone,
+                db_formatter=format_phone_db,
+                display_formatter=format_phone_display,
+                request_contact=True,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="email",
-            #     label="Email",
-            #     message="Напиши свою почту",
-            #     validator=validate_email,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="email",
+                label="Email",
+                message="Напиши свою почту",
+                validator=validate_email,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="position",
-            #     label="Желаемая должность",
-            #     message="На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)",
-            #     validator=create_options_validator(POSITIONS),
-            #     options=POSITIONS,
-            #     multi_select=True,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="position",
+                label="Желаемая должность",
+                message="На какой должности ты хочешь работать в лагере? (можешь выбрать несколько вариантов)",
+                validator=create_options_validator(POSITIONS),
+                options=POSITIONS,
+                multi_select=True,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="desired_age",
-            #     label="Желаемый возраст",
-            #     message="С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)",
-            #     validator=create_options_validator(AGES),
-            #     options=AGES,
-            #     multi_select=True,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="desired_age",
+                label="Желаемый возраст",
+                message="С детьми какого возраста хочешь работать? (можешь выбрать несколько вариантов)",
+                validator=create_options_validator(AGES),
+                options=AGES,
+                multi_select=True,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="probability_instructive",
-            #     label="Вероятность поехать на Инструктив",
-            #     message="Напиши, с какой вероятностью ты сможешь поехать на Инструктив (30.04-03.05)? (только один вариант)",
-            #     validator=create_options_validator(PROBABILITIES),
-            #     options=PROBABILITIES,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="probability_instructive",
+                label="Вероятность поехать на Инструктив",
+                message="Напиши, с какой вероятностью ты сможешь поехать на Инструктив (30.04-03.05)? (только один вариант)",
+                validator=create_options_validator(PROBABILITIES),
+                options=PROBABILITIES,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="probability_first",
-            #     label="Вероятность поехать на 1 смену",
-            #     message="Напиши, с какой вероятностью ты сможешь поехать на 1 смену (06.06-27.06)?",
-            #     validator=create_options_validator(PROBABILITIES),
-            #     options=PROBABILITIES,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="probability_first",
+                label="Вероятность поехать на 1 смену",
+                message="Напиши, с какой вероятностью ты сможешь поехать на 1 смену (06.06-27.06)?",
+                validator=create_options_validator(PROBABILITIES),
+                options=PROBABILITIES,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="probability_second",
-            #     label="Вероятность поехать на 2 смену",
-            #     message="С какой вероятностью ты сможешь поехать на 2 смену (04.07-25.07)?",
-            #     validator=create_options_validator(PROBABILITIES),
-            #     options=PROBABILITIES,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="probability_second",
+                label="Вероятность поехать на 2 смену",
+                message="С какой вероятностью ты сможешь поехать на 2 смену (04.07-25.07)?",
+                validator=create_options_validator(PROBABILITIES),
+                options=PROBABILITIES,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="education_choice",
-            #     label="Место учёбы",
-            #     message="Где ты учишься?",
-            #     validator=create_options_validator(EDUCATION_OPTIONS),
-            #     options=EDUCATION_OPTIONS,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="education_choice",
+                label="Место учёбы",
+                message="Где ты учишься?",
+                validator=create_options_validator(EDUCATION_OPTIONS),
+                options=EDUCATION_OPTIONS,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="other_education",
-            #     label="Другое учебное заведение",
-            #     message="Укажи название своего учебного заведения",
-            #     validator=validate_non_empty,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     skip_if=skip_if_other_education,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="other_education",
+                label="Другое учебное заведение",
+                message="Укажи название своего учебного заведения",
+                validator=validate_non_empty,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                skip_if=skip_if_other_education,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="study_group",
-            #     label="Группа",
-            #     message="В какой группе ты учишься?",
-            #     validator=validate_non_empty,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     skip_if=skip_if_finished_or_not_studying,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="study_group",
+                label="Группа",
+                message="В какой группе ты учишься?",
+                validator=validate_non_empty,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                skip_if=skip_if_finished_or_not_studying,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="work",
-            #     label="Работаешь",
-            #     message="Работаешь ли ты?",
-            #     validator=validate_yes_no,
-            #     options=YES_NO,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="work",
+                label="Работаешь",
+                message="Работаешь ли ты?",
+                validator=validate_yes_no,
+                options=YES_NO,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="work_place",
-            #     label="Место работы",
-            #     message="Напиши, где именно ты работаешь",
-            #     validator=validate_non_empty,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     skip_if=skip_if_not_working,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="work_place",
+                label="Место работы",
+                message="Напиши, где именно ты работаешь",
+                validator=validate_non_empty,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                skip_if=skip_if_not_working,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="diplom",
-            #     label="Диплом",
-            #     message="Есть ли у тебя диплом?",
-            #     validator=validate_yes_no,
-            #     options=YES_NO,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="diplom",
+                label="Диплом",
+                message="Есть ли у тебя диплом?",
+                validator=validate_yes_no,
+                options=YES_NO,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="rescheduling_session",
-            #     label="Нужен перенос сессии",
-            #     message="Нужен ли тебе перенос сессии?",
-            #     validator=validate_yes_no,
-            #     options=YES_NO,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     skip_if=skip_if_finished_or_not_studying,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="rescheduling_session",
+                label="Нужен перенос сессии",
+                message="Нужен ли тебе перенос сессии?",
+                validator=validate_yes_no,
+                options=YES_NO,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                skip_if=skip_if_finished_or_not_studying,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="rescheduling_practice",
-            #     label="Нужен перенос практики",
-            #     message="Нужен ли тебе перенос практики?",
-            #     validator=validate_yes_no,
-            #     options=YES_NO,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     skip_if=skip_if_finished_or_not_studying,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="rescheduling_practice",
+                label="Нужен перенос практики",
+                message="Нужен ли тебе перенос практики?",
+                validator=validate_yes_no,
+                options=YES_NO,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                skip_if=skip_if_finished_or_not_studying,
+                editable=True
+            ),
 
-            # SurveyField(
-            #     field_name="medical_book",
-            #     label="Медицинская книжка",
-            #     message="Есть ли у тебя медицинская книжка?",
-            #     validator=validate_yes_no,
-            #     options=YES_NO,
-            #     db_formatter=format_text_db,
-            #     display_formatter=format_default_display,
-            #     editable=True
-            # ),
+            SurveyField(
+                field_name="medical_book",
+                label="Медицинская книжка",
+                message="Есть ли у тебя медицинская книжка?",
+                validator=validate_yes_no,
+                options=YES_NO,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True
+            ),
         ]
 
     def _create_post_registration_states(self) -> List[Dict[str, Any]]:
