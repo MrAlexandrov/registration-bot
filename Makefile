@@ -14,7 +14,7 @@ run:
 	python3 -m src.main
 
 test:
-	PYTHONPATH=src pytest tests
+	PYTHONPATH=. pytest tests
 
 dump:
 	bash dump.sh
