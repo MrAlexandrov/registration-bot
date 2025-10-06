@@ -17,6 +17,7 @@ alembic = "1.14.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest-asyncio = "^0.23.0"
+pytest-cov = "^6.0.0"
 ruff = "0.8.4"
 
 [build-system]
@@ -78,5 +79,31 @@ indent-style = "space"
 # Like Black, respect magic trailing commas
 skip-magic-trailing-comma = false
 
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
 # Like Black, automatically detect the appropriate line ending
 line-ending = "auto"

@@ -16,6 +16,13 @@ run:
 test:
 	poetry run pytest tests
 
+test-cov:
+	poetry run pytest tests --cov=src --cov-report=term-missing --cov-report=html
+
+test-cov-report:
+	poetry run pytest tests --cov=src --cov-report=html
+	@echo "Coverage report generated in htmlcov/index.html"
+
 lint:
 	poetry run ruff check src tests
 

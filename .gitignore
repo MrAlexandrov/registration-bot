@@ -14,3 +14,5 @@ database.sqlite
 dumps
 notes.md
 excel/
+.DS_Store
+.coverage
