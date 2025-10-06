@@ -3,3 +3,5 @@ python-dotenv==1.0.1
 pandas==2.2.3
 openpyxl==3.1.5                     # for sending excel
 pytest-asyncio
+sqlalchemy==2.0.36
+alembic==1.14.0                     # for database migrations
