@@ -24,16 +24,9 @@ class Config:
         admin_ids_str = getenv("ADMIN_IDS", str(self.root_id))
         self.admin_ids = {int(id_str.strip()) for id_str in admin_ids_str.split(",") if id_str.strip()}
 
-        # Поддержка LENA_ID для обратной совместимости
-        lena_id = getenv("LENA_ID")
-        if lena_id:
-            lena_id = int(lena_id)
-            # Поддержка множественных получателей таблиц
-            table_getters_str = getenv("TABLE_GETTERS", f"{admin_ids_str},{lena_id}")
-            self.table_getters = {int(id_str.strip()) for id_str in table_getters_str.split(",") if id_str.strip()}
-        else:
-            table_getters_str = getenv("TABLE_GETTERS", admin_ids_str)
-            self.table_getters = {int(id_str.strip()) for id_str in table_getters_str.split(",") if id_str.strip()}
+        # Поддержка множественных получателей таблиц
+        table_getters_str = getenv("TABLE_GETTERS", admin_ids_str)
+        self.table_getters = {int(id_str.strip()) for id_str in table_getters_str.split(",") if id_str.strip()}
 
         # Используем новую систему конфигурации опроса
         self.survey_config = registration_survey
