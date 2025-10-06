@@ -1,19 +1,13 @@
 import logging
+
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+
 from .registration_handler import RegistrationFlow
-from .user_storage import user_storage
 from .settings import BOT_TOKEN
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    CallbackQueryHandler,
-)
+from .user_storage import user_storage
 
 # Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 

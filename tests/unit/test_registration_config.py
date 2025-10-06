@@ -1,19 +1,19 @@
 """
 Тесты для системы конфигурации регистрации.
 """
-import pytest
+
 from src.registration_config import (
+    AGES,
+    EDUCATION_OPTIONS,
+    POSITIONS,
+    PROBABILITIES,
+    YES_NO,
     RegistrationSurveyConfig,
     SurveyField,
     registration_survey,
-    POSITIONS,
-    AGES,
-    PROBABILITIES,
-    EDUCATION_OPTIONS,
-    YES_NO
 )
-from src.survey.validators import validate_non_empty, validate_phone
-from src.survey.formatters import format_text_db, format_default_display
+from src.survey.formatters import format_default_display, format_text_db
+from src.survey.validators import validate_non_empty
 
 
 class TestSurveyField:
@@ -28,7 +28,7 @@ class TestSurveyField:
             validator=validate_non_empty,
             db_formatter=format_text_db,
             display_formatter=format_default_display,
-            editable=True
+            editable=True,
         )
 
         assert field.field_name == "test_field"
@@ -49,7 +49,7 @@ class TestSurveyField:
             message="Выберите вариант",
             options=options,
             multi_select=True,
-            editable=True
+            editable=True,
         )
 
         assert field.options == options
@@ -120,10 +120,7 @@ class TestRegistrationSurveyConfig:
         initial_count = len(config.fields)
 
         new_field = SurveyField(
-            field_name="test_field",
-            label="Тестовое поле",
-            message="Тестовое сообщение",
-            editable=True
+            field_name="test_field", label="Тестовое поле", message="Тестовое сообщение", editable=True
         )
 
         config.add_field(new_field)
@@ -137,10 +134,7 @@ class TestRegistrationSurveyConfig:
 
         # Добавляем поле для удаления
         test_field = SurveyField(
-            field_name="temp_field",
-            label="Временное поле",
-            message="Временное сообщение",
-            editable=True
+            field_name="temp_field", label="Временное поле", message="Временное сообщение", editable=True
         )
         config.add_field(test_field)
 

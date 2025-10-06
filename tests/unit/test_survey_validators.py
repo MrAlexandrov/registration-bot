@@ -1,11 +1,22 @@
 """
 Тесты для валидаторов опроса.
 """
+
 import pytest
+
 from src.survey.validators import (
-    NonEmptyValidator, PhoneValidator, EmailValidator, DateValidator,
-    OptionsValidator, YesNoValidator, ValidatorFactory,
-    validate_non_empty, validate_phone, validate_email, validate_date, validate_yes_no
+    DateValidator,
+    EmailValidator,
+    NonEmptyValidator,
+    OptionsValidator,
+    PhoneValidator,
+    ValidatorFactory,
+    YesNoValidator,
+    validate_date,
+    validate_email,
+    validate_non_empty,
+    validate_phone,
+    validate_yes_no,
 )
 
 
@@ -46,26 +57,19 @@ class TestNonEmptyValidator:
 class TestPhoneValidator:
     """Тесты для PhoneValidator."""
 
-    @pytest.mark.parametrize("phone", [
-        "+79998887766",
-        "89998887766",
-        "79998887766",
-        "8 (999) 888-77-66",
-        "+7 999 888 77 66"
-    ])
+    @pytest.mark.parametrize(
+        "phone", ["+79998887766", "89998887766", "79998887766", "8 (999) 888-77-66", "+7 999 888 77 66"]
+    )
     def test_valid_phones(self, phone):
         validator = PhoneValidator()
         is_valid, error = validator.validate(phone)
         assert is_valid is True
         assert error is None
 
-    @pytest.mark.parametrize("phone", [
-        "9998887766",  # без кода страны
-        "abc",
-        "123",
-        "+1234567890",  # неправильный код страны
-        ""
-    ])
+    @pytest.mark.parametrize(
+        "phone",
+        ["9998887766", "abc", "123", "+1234567890", ""],  # без кода страны  # неправильный код страны
+    )
     def test_invalid_phones(self, phone):
         validator = PhoneValidator()
         is_valid, error = validator.validate(phone)
@@ -76,24 +80,14 @@ class TestPhoneValidator:
 class TestEmailValidator:
     """Тесты для EmailValidator."""
 
-    @pytest.mark.parametrize("email", [
-        "test@example.com",
-        "user.name@domain.co.uk",
-        "test123@test-domain.org"
-    ])
+    @pytest.mark.parametrize("email", ["test@example.com", "user.name@domain.co.uk", "test123@test-domain.org"])
     def test_valid_emails(self, email):
         validator = EmailValidator()
         is_valid, error = validator.validate(email)
         assert is_valid is True
         assert error is None
 
-    @pytest.mark.parametrize("email", [
-        "test@example",
-        "test",
-        "@example.com",
-        "test@",
-        ""
-    ])
+    @pytest.mark.parametrize("email", ["test@example", "test", "@example.com", "test@", ""])
     def test_invalid_emails(self, email):
         validator = EmailValidator()
         is_valid, error = validator.validate(email)
@@ -104,26 +98,17 @@ class TestEmailValidator:
 class TestDateValidator:
     """Тесты для DateValidator."""
 
-    @pytest.mark.parametrize("date", [
-        "01.01.2000",
-        "31.12.1999",
-        "15.06.2023",
-        "1.1.2020",
-        "29.02.2020"  # високосный год
-    ])
+    @pytest.mark.parametrize(
+        "date",
+        ["01.01.2000", "31.12.1999", "15.06.2023", "1.1.2020", "29.02.2020"],  # високосный год
+    )
     def test_valid_dates(self, date):
         validator = DateValidator()
         is_valid, error = validator.validate(date)
         assert is_valid is True
         assert error is None
 
-    @pytest.mark.parametrize("date", [
-        "2000-01-01",
-        "32.12.2022",
-        "01.13.2022",
-        "abc",
-        ""
-    ])
+    @pytest.mark.parametrize("date", ["2000-01-01", "32.12.2022", "01.13.2022", "abc", ""])
     def test_invalid_dates(self, date):
         validator = DateValidator()
         is_valid, error = validator.validate(date)

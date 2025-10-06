@@ -1,16 +1,17 @@
 """
 Тесты для автосборщиков данных.
 """
-import pytest
+
 from unittest.mock import MagicMock
+
 from src.survey.auto_collectors import (
-    UsernameAutoCollector,
+    AutoCollectorFactory,
     FirstNameAutoCollector,
     FullNameAutoCollector,
-    AutoCollectorFactory,
-    auto_collect_username,
+    UsernameAutoCollector,
     auto_collect_first_name,
-    auto_collect_full_name
+    auto_collect_full_name,
+    auto_collect_username,
 )
 
 

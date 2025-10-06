@@ -1,13 +1,14 @@
 """
 Database configuration and session management for SQLAlchemy ORM.
 """
-import os
-from contextlib import contextmanager
-from typing import Generator
+
 import logging
+import os
+from collections.abc import Generator
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 logger = logging.getLogger(__name__)
@@ -45,11 +46,7 @@ class Database:
             cursor.close()
 
         # Create session factory
-        self.SessionLocal = sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
         logger.info(f"Database initialized at {db_path}")
 

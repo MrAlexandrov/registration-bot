@@ -2,11 +2,11 @@
 User storage using SQLAlchemy ORM.
 Provides backward-compatible interface with the previous SQLite implementation.
 """
-from typing import Optional, Dict, Any, List
+
 import logging
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from .database import db
 from .models import get_user_model
@@ -31,6 +31,7 @@ class UserStorage:
         """
         # Initialize database with the provided path
         from .database import Database
+
         global db
         db = Database(db_path)
 
@@ -63,16 +64,13 @@ class UserStorage:
         try:
             with db.get_session() as session:
                 # Create new user instance
-                user = self.User(
-                    telegram_id=user_id,
-                    state=initial_state
-                )
+                user = self.User(telegram_id=user_id, state=initial_state)
                 session.add(user)
                 session.commit()
                 logger.info(f"Created new user with ID: {user_id}")
-        except IntegrityError:
+        except IntegrityError as e:
             logger.warning(f"User {user_id} already exists")
-            raise ValueError(f"User {user_id} already exists")
+            raise ValueError(f"User {user_id} already exists") from e
 
     def update_user(self, user_id: int, field: str, value: Any) -> None:
         """
@@ -108,7 +106,7 @@ class UserStorage:
         """
         self.update_user(user_id, "state", state)
 
-    def get_user(self, user_id: int) -> Optional[Dict[str, Any]]:
+    def get_user(self, user_id: int) -> dict[str, Any] | None:
         """
         Get user data by Telegram ID.
 
@@ -128,7 +126,7 @@ class UserStorage:
             # Convert to dictionary for backward compatibility
             return user.to_dict()
 
-    def get_all_users(self) -> List[int]:
+    def get_all_users(self) -> list[int]:
         """
         Get list of all user telegram_ids.
 
@@ -172,7 +170,7 @@ class UserStorage:
             logger.info(f"Deleted user {user_id}")
             return True
 
-    def get_users_by_state(self, state: str) -> List[Dict[str, Any]]:
+    def get_users_by_state(self, state: str) -> list[dict[str, Any]]:
         """
         Get all users in a specific state.
 

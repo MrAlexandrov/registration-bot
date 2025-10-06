@@ -16,6 +16,13 @@ run:
 test:
 	PYTHONPATH=. pytest tests
 
+lint:
+	ruff check src tests
+
+format:
+	ruff check --fix src tests
+	ruff format src tests
+
 dump:
 	bash dump.sh
 

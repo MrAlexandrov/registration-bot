@@ -2,8 +2,8 @@
 Форматтеры для полей опроса.
 Следует принципу Single Responsibility - каждый форматтер отвечает за одну задачу.
 """
+
 import re
-from typing import Optional
 from abc import ABC, abstractmethod
 
 
@@ -28,7 +28,7 @@ class PhoneDbFormatter(Formatter):
 
     def format(self, value: str) -> str:
         # Удаляем все символы кроме цифр
-        phone = re.sub(r'\D', '', str(value))
+        phone = re.sub(r"\D", "", str(value))
 
         # Заменяем 8 на 7 в начале
         if phone.startswith("8"):
@@ -47,7 +47,7 @@ class PhoneDisplayFormatter(Formatter):
         # Сначала форматируем для БД, затем добавляем +
         db_formatter = PhoneDbFormatter()
         phone = db_formatter.format(value)
-        return '+' + phone
+        return "+" + phone
 
 
 class DateDbFormatter(Formatter):
@@ -58,7 +58,7 @@ class DateDbFormatter(Formatter):
             return ""
 
         # Разбиваем дату на день, месяц и год
-        day, month, year = value.split('.')
+        day, month, year = value.split(".")
 
         # Добавляем ведущие нули
         day = day.zfill(2)
@@ -127,20 +127,26 @@ class FormatterFactory:
 def format_text_db(value: str) -> str:
     return FormatterFactory.create_text().format(value)
 
+
 def format_phone_db(value: str) -> str:
     return FormatterFactory.create_phone_db().format(value)
+
 
 def format_phone_display(value: str) -> str:
     return FormatterFactory.create_phone_display().format(value)
 
+
 def format_date_db(value: str) -> str:
     return FormatterFactory.create_date_db().format(value)
+
 
 def format_username_db(value: str) -> str:
     return FormatterFactory.create_username_db().format(value)
 
+
 def format_username_display(value: str) -> str:
     return FormatterFactory.create_username_display().format(value)
+
 
 def format_default_display(value: str) -> str:
     return FormatterFactory.create_default_display().format(value)

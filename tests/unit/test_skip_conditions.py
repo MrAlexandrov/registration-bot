@@ -1,18 +1,18 @@
 """
 Тесты для условий пропуска вопросов.
 """
-import pytest
+
 from src.survey.skip_conditions import (
-    FieldValueSkipCondition,
-    FieldNotValueSkipCondition,
-    MultipleFieldsSkipCondition,
     AnyFieldSkipCondition,
+    FieldNotValueSkipCondition,
+    FieldValueSkipCondition,
+    MultipleFieldsSkipCondition,
     SkipConditionFactory,
-    skip_if_other_education,
+    skip_if_bmstu_student,
     skip_if_finished_or_not_studying,
-    skip_if_not_working,
     skip_if_no_diploma,
-    skip_if_bmstu_student
+    skip_if_not_working,
+    skip_if_other_education,
 )
 
 

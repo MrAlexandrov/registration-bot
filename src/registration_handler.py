@@ -1,15 +1,24 @@
-from telegram import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
-from .user_storage import user_storage
-from .settings import SURVEY_CONFIG, ADMIN_IDS, TABLE_GETTERS
-from telegram.constants import ParseMode
-from .message_formatter import MessageFormatter
-from .utils import get_actual_table
 import logging
-from .constants import *
+
+from telegram.constants import ParseMode
+
+from .constants import (
+    ADMIN_SEND_MESSAGE,
+    BUTTONS,
+    CANCEL,
+    CHANGE_DATA,
+    EDIT,
+    GET_ACTUAL_TABLE,
+    OPTIONS,
+    REGISTERED,
+    SEND_MESSAGE_ALL_USERS,
+    STATE,
+)
+from .message_formatter import MessageFormatter
+from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
+from .user_storage import user_storage
+from .utils import get_actual_table
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +47,10 @@ class RegistrationFlow:
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
         if user is None:
-            await context.bot.send_message(chat_id=user_id, text="Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново")
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново",
+            )
             await self.handle_command(update, context)
             return
         state = user[STATE]
@@ -59,13 +71,12 @@ class RegistrationFlow:
             return
 
         # Проверяем наличие options для SurveyField или словаря
-        has_options = (hasattr(config, 'options') and config.options) or (isinstance(config, dict) and OPTIONS in config)
+        has_options = (hasattr(config, "options") and config.options) or (
+            isinstance(config, dict) and OPTIONS in config
+        )
         if has_options:
             logger.debug("User sent message while inline keyboard is active")
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="Пожалуйста, воспользуйся кнопками"
-            )
+            await context.bot.send_message(chat_id=user_id, text="Пожалуйста, воспользуйся кнопками")
             return
 
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
@@ -88,10 +99,14 @@ class RegistrationFlow:
             logger.info(f"Sending message to all users: {all_users_id}")
             for current_user_id in all_users_id:
                 try:
-                    await context.bot.send_message(chat_id=current_user_id, text=user_input, parse_mode=ParseMode.MARKDOWN_V2)
+                    await context.bot.send_message(
+                        chat_id=current_user_id, text=user_input, parse_mode=ParseMode.MARKDOWN_V2
+                    )
                 except Exception as e:
                     logger.error(f"Can't send message to user {current_user_id}: {e}")
-            await context.bot.send_message(chat_id=user_id, text=f"Сообщение было отправлено {len(all_users_id)} пользователям")
+            await context.bot.send_message(
+                chat_id=user_id, text=f"Сообщение было отправлено {len(all_users_id)} пользователям"
+            )
             logger.info(f"Message '{update.message.text}' was sent to {len(all_users_id)} users")
             await self.state_handler.transition_state(update, context, REGISTERED)
             return True
@@ -126,7 +141,10 @@ class RegistrationFlow:
             field_config = self.get_config_by_label(user_input)
             if not field_config:
                 logger.error(f"Field '{user_input}' not found for user {user_id}")
-                await context.bot.send_message(chat_id=user_id, text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование")
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование",
+                )
                 return
 
             if not field_config.editable:
@@ -186,7 +204,7 @@ class RegistrationFlow:
         query = update.callback_query
         await query.answer()
 
-        callback_data = query.data.split('|')
+        callback_data = query.data.split("|")
         action = callback_data[0]
         option = callback_data[1] if len(callback_data) > 1 else None
 
@@ -209,8 +227,7 @@ class RegistrationFlow:
 
             self.user_storage.update_user(user_id, actual_field_name, ", ".join(selected_options))
             reply_markup = self.state_handler.create_inline_keyboard(
-                field_config.options,
-                selected_options=selected_options
+                field_config.options, selected_options=selected_options
             )
             if query.message.reply_markup != reply_markup:
                 await query.edit_message_reply_markup(reply_markup=reply_markup)

@@ -2,16 +2,19 @@
 Integration tests for ORM implementation.
 Tests the database and models work correctly.
 """
-import pytest
-import tempfile
+
 import os
+import tempfile
+
+import pytest
+
 from src.user_storage import UserStorage
 
 
 @pytest.fixture(scope="function")
 def test_storage():
     """Create a temporary test database for ORM tests."""
-    fd, db_path = tempfile.mkstemp(suffix='.sqlite')
+    fd, db_path = tempfile.mkstemp(suffix=".sqlite")
     os.close(fd)
 
     storage = UserStorage(db_path)
@@ -21,7 +24,7 @@ def test_storage():
     # Cleanup
     try:
         os.unlink(db_path)
-    except:
+    except OSError:
         pass
 
 
@@ -36,8 +39,8 @@ class TestORMImplementation:
 
         user = test_storage.get_user(test_user_id)
         assert user is not None
-        assert user['telegram_id'] == test_user_id
-        assert user['state'] == "name"
+        assert user["telegram_id"] == test_user_id
+        assert user["state"] == "name"
 
     def test_create_duplicate_user(self, test_storage):
         """Test that creating duplicate user raises ValueError."""
@@ -56,8 +59,8 @@ class TestORMImplementation:
         user = test_storage.get_user(test_user_id)
 
         assert user is not None
-        assert user['telegram_id'] == test_user_id
-        assert user['state'] == "name"
+        assert user["telegram_id"] == test_user_id
+        assert user["state"] == "name"
 
     def test_get_nonexistent_user(self, test_storage):
         """Test getting non-existent user returns None."""
@@ -72,7 +75,7 @@ class TestORMImplementation:
         test_storage.update_user(test_user_id, "name", "Иван Иванов")
 
         user = test_storage.get_user(test_user_id)
-        assert user['name'] == "Иван Иванов"
+        assert user["name"] == "Иван Иванов"
 
     def test_update_state(self, test_storage):
         """Test updating user state."""
@@ -82,7 +85,7 @@ class TestORMImplementation:
         test_storage.update_state(test_user_id, "birth_date")
 
         user = test_storage.get_user(test_user_id)
-        assert user['state'] == "birth_date"
+        assert user["state"] == "birth_date"
 
     def test_get_all_users(self, test_storage):
         """Test getting all users."""
@@ -118,7 +121,7 @@ class TestORMImplementation:
         users_in_state = test_storage.get_users_by_state("birth_date")
 
         assert len(users_in_state) == 2
-        user_ids = [user['telegram_id'] for user in users_in_state]
+        user_ids = [user["telegram_id"] for user in users_in_state]
         assert 222222222 in user_ids
         assert 333333333 in user_ids
 

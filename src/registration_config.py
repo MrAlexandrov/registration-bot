@@ -9,25 +9,30 @@
 - Interface Segregation: отдельные интерфейсы для разных компонентов
 - Dependency Inversion: зависимости от абстракций, а не от конкретных классов
 """
-from typing import List, Optional, Callable, Dict, Any, Tuple, TYPE_CHECKING
+
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
-if TYPE_CHECKING:
-    from telegram import Update
-
-from .survey.validators import (
-    ValidatorFactory, validate_non_empty, validate_phone, validate_email,
-    validate_date, validate_yes_no, create_options_validator
-)
-from .survey.formatters import (
-    FormatterFactory, format_text_db, format_phone_db, format_phone_display,
-    format_date_db, format_username_db, format_username_display, format_default_display
-)
 from .survey.auto_collectors import auto_collect_username
-from .survey.skip_conditions import (
-    skip_if_other_education, skip_if_finished_or_not_studying, skip_if_not_working
+from .survey.formatters import (
+    format_date_db,
+    format_default_display,
+    format_phone_db,
+    format_phone_display,
+    format_text_db,
+    format_username_db,
+    format_username_display,
 )
-
+from .survey.skip_conditions import skip_if_finished_or_not_studying, skip_if_not_working, skip_if_other_education
+from .survey.validators import (
+    create_options_validator,
+    validate_date,
+    validate_email,
+    validate_non_empty,
+    validate_phone,
+    validate_yes_no,
+)
 
 # Константы для вариантов ответов
 POSITIONS = ["Вожатый", "Подменка", "Физрук", "Кружковод", "Фотограф", "Радист", "Культорг"]
@@ -63,32 +68,33 @@ class SurveyField:
     - Как их обрабатывать для вывода пользователю
     - Можно ли пропустить вопрос
     """
+
     # Основные параметры
-    field_name: str                                                    # Поле в базе данных
-    label: str                                                         # Что показать пользователю
-    message: str                                                       # Текст вопроса
+    field_name: str  # Поле в базе данных
+    label: str  # Что показать пользователю
+    message: str  # Текст вопроса
 
     # Валидация
-    validator: Optional[Callable[[str], Tuple[bool, Optional[str]]]] = None  # Как валидировать
+    validator: Callable[[str], tuple[bool, str | None]] | None = None  # Как валидировать
 
     # Форматирование
-    db_formatter: Optional[Callable[[str], str]] = None               # Как обработать для БД
-    display_formatter: Optional[Callable[[str], str]] = None          # Как обработать для вывода
+    db_formatter: Callable[[str], str] | None = None  # Как обработать для БД
+    display_formatter: Callable[[str], str] | None = None  # Как обработать для вывода
 
     # Варианты ответов
-    options: Optional[List[str]] = None                                # Варианты ответов
-    multi_select: bool = False                                         # Можно ли выбрать несколько
+    options: list[str] | None = None  # Варианты ответов
+    multi_select: bool = False  # Можно ли выбрать несколько
 
     # Специальные возможности
-    request_contact: bool = False                                      # Запросить контакт
-    auto_collect: Optional[Callable[[Any], Optional[str]]] = None  # Автосбор данных
-    skip_if: Optional[Callable[[Dict[str, Any]], bool]] = None        # Условие пропуска
+    request_contact: bool = False  # Запросить контакт
+    auto_collect: Callable[[Any], str | None] | None = None  # Автосбор данных
+    skip_if: Callable[[dict[str, Any]], bool] | None = None  # Условие пропуска
 
     # Настройки редактирования
-    editable: bool = True                                              # Можно ли редактировать
+    editable: bool = True  # Можно ли редактировать
 
     # Тип поля в БД
-    db_type: str = "TEXT"                                              # Тип поля в БД
+    db_type: str = "TEXT"  # Тип поля в БД
 
 
 class RegistrationSurveyConfig:
@@ -99,7 +105,7 @@ class RegistrationSurveyConfig:
         self._post_registration_states = self._create_post_registration_states()
         self._admin_states = self._create_admin_states()
 
-    def _create_fields(self) -> List[SurveyField]:
+    def _create_fields(self) -> list[SurveyField]:
         """Создает список полей опроса."""
         return [
             SurveyField(
@@ -109,9 +115,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_username_db,
                 display_formatter=format_username_display,
                 auto_collect=auto_collect_username,
-                editable=False
+                editable=False,
             ),
-
             SurveyField(
                 field_name="name",
                 label="Имя",
@@ -119,9 +124,8 @@ class RegistrationSurveyConfig:
                 validator=validate_non_empty,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="birth_date",
                 label="Дата рождения",
@@ -129,9 +133,8 @@ class RegistrationSurveyConfig:
                 validator=validate_date,
                 db_formatter=format_date_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="phone",
                 label="Телефон",
@@ -140,9 +143,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_phone_db,
                 display_formatter=format_phone_display,
                 request_contact=True,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="email",
                 label="Email",
@@ -150,9 +152,8 @@ class RegistrationSurveyConfig:
                 validator=validate_email,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="position",
                 label="Желаемая должность",
@@ -162,9 +163,8 @@ class RegistrationSurveyConfig:
                 multi_select=True,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="desired_age",
                 label="Желаемый возраст",
@@ -174,9 +174,8 @@ class RegistrationSurveyConfig:
                 multi_select=True,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="probability_instructive",
                 label="Вероятность поехать на Инструктив",
@@ -185,9 +184,8 @@ class RegistrationSurveyConfig:
                 options=PROBABILITIES,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="probability_first",
                 label="Вероятность поехать на 1 смену",
@@ -196,9 +194,8 @@ class RegistrationSurveyConfig:
                 options=PROBABILITIES,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="probability_second",
                 label="Вероятность поехать на 2 смену",
@@ -207,9 +204,8 @@ class RegistrationSurveyConfig:
                 options=PROBABILITIES,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="education_choice",
                 label="Место учёбы",
@@ -218,9 +214,8 @@ class RegistrationSurveyConfig:
                 options=EDUCATION_OPTIONS,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="other_education",
                 label="Другое учебное заведение",
@@ -229,9 +224,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 skip_if=skip_if_other_education,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="study_group",
                 label="Группа",
@@ -240,9 +234,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 skip_if=skip_if_finished_or_not_studying,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="work",
                 label="Работаешь",
@@ -251,9 +244,8 @@ class RegistrationSurveyConfig:
                 options=YES_NO,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="work_place",
                 label="Место работы",
@@ -262,9 +254,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 skip_if=skip_if_not_working,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="diplom",
                 label="Диплом",
@@ -273,9 +264,8 @@ class RegistrationSurveyConfig:
                 options=YES_NO,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="rescheduling_session",
                 label="Нужен перенос сессии",
@@ -285,9 +275,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 skip_if=skip_if_finished_or_not_studying,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="rescheduling_practice",
                 label="Нужен перенос практики",
@@ -297,9 +286,8 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 skip_if=skip_if_finished_or_not_studying,
-                editable=True
+                editable=True,
             ),
-
             SurveyField(
                 field_name="medical_book",
                 label="Медицинская книжка",
@@ -308,36 +296,32 @@ class RegistrationSurveyConfig:
                 options=YES_NO,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
-                editable=True
+                editable=True,
             ),
         ]
 
-    def _create_post_registration_states(self) -> List[Dict[str, Any]]:
+    def _create_post_registration_states(self) -> list[dict[str, Any]]:
         """Создает состояния после регистрации."""
         return [
-            {
-                "state": REGISTERED,
-                "message": self._generate_registered_message,
-                "buttons": [CHANGE_DATA]
-            },
+            {"state": REGISTERED, "message": self._generate_registered_message, "buttons": [CHANGE_DATA]},
             {
                 "state": EDIT,
                 "message": "Что хочешь изменить?",
-                "buttons": lambda: [field.label for field in self.get_editable_fields()] + [CANCEL]
-            }
+                "buttons": lambda: [field.label for field in self.get_editable_fields()] + [CANCEL],
+            },
         ]
 
-    def _create_admin_states(self) -> List[Dict[str, Any]]:
+    def _create_admin_states(self) -> list[dict[str, Any]]:
         """Создает админские состояния."""
         return [
             {
                 "state": ADMIN_SEND_MESSAGE,
                 "message": "Напиши сообщение, которое хочешь отправить всем пользователям",
-                "buttons": [CANCEL]
+                "buttons": [CANCEL],
             }
         ]
 
-    def _generate_registered_message(self, user_data: Dict[str, Any]) -> str:
+    def _generate_registered_message(self, user_data: dict[str, Any]) -> str:
         """Генерирует сообщение с данными пользователя после регистрации."""
         message = "Отлично! Вот, что я запомнил, проверь, пожалуйста, что всё верно:\n"
 
@@ -352,33 +336,33 @@ class RegistrationSurveyConfig:
     # Публичные методы для доступа к конфигурации
 
     @property
-    def fields(self) -> List[SurveyField]:
+    def fields(self) -> list[SurveyField]:
         """Возвращает список всех полей."""
         return self._fields.copy()
 
     @property
-    def post_registration_states(self) -> List[Dict[str, Any]]:
+    def post_registration_states(self) -> list[dict[str, Any]]:
         """Возвращает состояния после регистрации."""
         return self._post_registration_states.copy()
 
     @property
-    def admin_states(self) -> List[Dict[str, Any]]:
+    def admin_states(self) -> list[dict[str, Any]]:
         """Возвращает админские состояния."""
         return self._admin_states.copy()
 
-    def get_field_by_name(self, field_name: str) -> Optional[SurveyField]:
+    def get_field_by_name(self, field_name: str) -> SurveyField | None:
         """Получает поле по имени."""
         return next((field for field in self._fields if field.field_name == field_name), None)
 
-    def get_field_by_label(self, label: str) -> Optional[SurveyField]:
+    def get_field_by_label(self, label: str) -> SurveyField | None:
         """Получает поле по метке."""
         return next((field for field in self._fields if field.label == label), None)
 
-    def get_editable_fields(self) -> List[SurveyField]:
+    def get_editable_fields(self) -> list[SurveyField]:
         """Возвращает список редактируемых полей."""
         return [field for field in self._fields if field.editable]
 
-    def get_field_names(self) -> List[str]:
+    def get_field_names(self) -> list[str]:
         """Возвращает список имен полей."""
         return [field.field_name for field in self._fields]
 

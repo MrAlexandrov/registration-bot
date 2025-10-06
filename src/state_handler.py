@@ -1,17 +1,31 @@
-from telegram import (
-    ReplyKeyboardMarkup,
-    KeyboardButton,
-    ReplyKeyboardRemove,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
-from telegram.constants import ParseMode
-from .settings import SURVEY_CONFIG, ADMIN_IDS, TABLE_GETTERS
-from .constants import *
 import copy
 import logging
-from .utils import get_actual_table
-from .message_formatter import MessageFormatter
+
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
+from telegram.constants import ParseMode
+
+from .constants import (
+    AUTO_COLLECT,
+    BUTTONS,
+    CANCEL,
+    DONE,
+    EDIT,
+    GET_ACTUAL_TABLE,
+    MESSAGE,
+    OPTIONS,
+    REGISTERED,
+    REQUEST_CONTACT,
+    SEND_MESSAGE_ALL_USERS,
+    SKIP_IF,
+    STATE,
+)
+from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +64,7 @@ class StateHandler:
         actual_field_name = state.replace("edit_", "")
 
         # Для SurveyField используем атрибуты, для словарей - ключи
-        auto_collect = config.auto_collect if hasattr(config, 'auto_collect') else config.get(AUTO_COLLECT)
+        auto_collect = config.auto_collect if hasattr(config, "auto_collect") else config.get(AUTO_COLLECT)
         if auto_collect:
             value = auto_collect(update)
             if value:
@@ -60,7 +74,7 @@ class StateHandler:
                 return
 
         # Для SurveyField используем атрибуты, для словарей - ключи
-        skip_if = config.skip_if if hasattr(config, 'skip_if') else config.get(SKIP_IF)
+        skip_if = config.skip_if if hasattr(config, "skip_if") else config.get(SKIP_IF)
         if skip_if and skip_if(user_data):
             self.user_storage.update_user(user_id, actual_field_name, "skipped")
             next_state = self.get_next_state(state)
@@ -72,12 +86,14 @@ class StateHandler:
         reply_markup = self.get_reply_markup(config, user_id, state, user_data)
 
         logger.info(f"Sending message to user {user_id}: {message}")
-        await context.bot.send_message(chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
+        await context.bot.send_message(
+            chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
+        )
 
     def get_reply_markup(self, config, user_id, state, user_data):
         actual_field_name = state.replace("edit_", "")
         # Для SurveyField используем атрибуты, для словарей - ключи
-        if hasattr(config, 'options'):
+        if hasattr(config, "options"):
             options = config.options
         else:
             options = config.get(OPTIONS) if isinstance(config, dict) else None
@@ -85,16 +101,13 @@ class StateHandler:
         if options:
             selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
-            return self.create_inline_keyboard(
-                options,
-                selected_options=selected_options
-            )
+            return self.create_inline_keyboard(options, selected_options=selected_options)
         # Для словарей используем ключи (SurveyField не имеет buttons)
         elif isinstance(config, dict) and BUTTONS in config:
             buttons_value = config[BUTTONS]
             buttons = buttons_value() if callable(buttons_value) else copy.deepcopy(buttons_value)
             if state == REGISTERED:
-                if (user_id in ADMIN_IDS or user_id in TABLE_GETTERS):
+                if user_id in ADMIN_IDS or user_id in TABLE_GETTERS:
                     if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
                         buttons.append(SEND_MESSAGE_ALL_USERS)
                     if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
@@ -108,15 +121,16 @@ class StateHandler:
                 buttons = [field.label for field in SURVEY_CONFIG.get_editable_fields()] + [CANCEL]
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
         # Для SurveyField используем атрибуты, для словарей - get
-        elif (hasattr(config, 'request_contact') and config.request_contact) or (isinstance(config, dict) and config.get(REQUEST_CONTACT)):
+        elif (hasattr(config, "request_contact") and config.request_contact) or (
+            isinstance(config, dict) and config.get(REQUEST_CONTACT)
+        ):
             return ReplyKeyboardMarkup(
                 [[KeyboardButton(text="Поделиться номером из Telegram", request_contact=True)]],
                 resize_keyboard=True,
-                one_time_keyboard=True
+                one_time_keyboard=True,
             )
         else:
             return ReplyKeyboardRemove()
-
 
     def get_next_state(self, state):
         actual_state = state.replace("edit_", "")
@@ -156,22 +170,24 @@ class StateHandler:
 
     def get_state_message(self, config, user_id):
         # Для SurveyField используем field_name, для словарей - STATE
-        state_name = config.field_name if hasattr(config, 'field_name') else config[STATE]
+        state_name = config.field_name if hasattr(config, "field_name") else config[STATE]
         logger.debug(f"Formatting message for state '{state_name}'")
         if state_name == REGISTERED:
             return self.get_registered_message(config, user_id)
         # Для SurveyField используем message, для словарей - MESSAGE
-        return config.message if hasattr(config, 'message') else config[MESSAGE]
+        return config.message if hasattr(config, "message") else config[MESSAGE]
 
     def get_registered_message(self, config, user_id):
-        state_name = config.field_name if hasattr(config, 'field_name') else config[STATE]
+        state_name = config.field_name if hasattr(config, "field_name") else config[STATE]
         if state_name != REGISTERED:
-            logger.error(f"get_registered_message should only be used for the 'registered' state, current state = {state_name}")
+            logger.error(
+                f"get_registered_message should only be used for the 'registered' state, current state = {state_name}"
+            )
         user = self.user_storage.get_user(user_id)
         logger.debug(f"User data from database: {user}")
 
         # Получаем message из конфига
-        message = config.message if hasattr(config, 'message') else config[MESSAGE]
+        message = config.message if hasattr(config, "message") else config[MESSAGE]
 
         # Проверяем, является ли message функцией (новая система) или строкой (старая система)
         if callable(message):
@@ -180,9 +196,11 @@ class StateHandler:
         else:
             # Старая система - форматируем строку
             user_data = {
-                field.field_name: field.display_formatter(user.get(field.field_name, "Не указано"))
-                if field.display_formatter and callable(field.display_formatter)
-                else user.get(field.field_name, "Не указано")
+                field.field_name: (
+                    field.display_formatter(user.get(field.field_name, "Не указано"))
+                    if field.display_formatter and callable(field.display_formatter)
+                    else user.get(field.field_name, "Не указано")
+                )
                 for field in SURVEY_CONFIG.fields
             }
             logger.debug(f"Prepared data for substitution: {user_data}")
@@ -191,13 +209,10 @@ class StateHandler:
     def create_inline_keyboard(self, options, selected_options=None):
         selected_options = selected_options or []
         buttons = [
-            InlineKeyboardButton(
-                f"✅ {opt}" if opt in selected_options else opt,
-                callback_data=f"select|{opt}"
-            )
+            InlineKeyboardButton(f"✅ {opt}" if opt in selected_options else opt, callback_data=f"select|{opt}")
             for opt in options
         ]
-        keyboard = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+        keyboard = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
         if selected_options:
             keyboard.append([InlineKeyboardButton(DONE, callback_data="done")])
         return InlineKeyboardMarkup(keyboard)

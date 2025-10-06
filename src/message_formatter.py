@@ -1,7 +1,7 @@
 import re
+
 from telegram import Update
 from telegram.constants import ParseMode
-from typing import Optional, List
 
 
 class MessageFormatter:
@@ -10,7 +10,7 @@ class MessageFormatter:
     @staticmethod
     def _escape_markdown_v2(text: str) -> str:
         """Экранирует специальные символы в MarkdownV2."""
-        return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', text)
+        return re.sub(r"([_*\[\]()~`>#+\-=|{}.!])", r"\\\1", text)
 
     @staticmethod
     def _escape_html(text: str) -> str:
@@ -18,7 +18,7 @@ class MessageFormatter:
         return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     @staticmethod
-    def _apply_entities_to_text(text: str, entities: List, mode: str) -> str:
+    def _apply_entities_to_text(text: str, entities: list, mode: str) -> str:
         """Применяет форматирование к тексту (MarkdownV2 или HTML)."""
 
         if not entities:
@@ -34,7 +34,7 @@ class MessageFormatter:
         for entity in entities:
             # Добавляем неформатированный текст перед entity
             if entity.offset > offset:
-                non_entity_text = text[offset:entity.offset]
+                non_entity_text = text[offset : entity.offset]
                 escaped_text = (
                     MessageFormatter._escape_markdown_v2(non_entity_text)
                     if mode == ParseMode.MARKDOWN_V2
@@ -58,9 +58,11 @@ class MessageFormatter:
                     "strikethrough": f"~{escaped_text}~",
                     "code": f"`{escaped_text}`",
                     "pre": f"```{escaped_text}```",
-                    "text_link": f"[{escaped_text}]({MessageFormatter._escape_markdown_v2(entity.url)})"
-                    if entity.url
-                    else escaped_text,
+                    "text_link": (
+                        f"[{escaped_text}]({MessageFormatter._escape_markdown_v2(entity.url)})"
+                        if entity.url
+                        else escaped_text
+                    ),
                 }
             else:  # HTML Mode
                 formatting = {
@@ -70,9 +72,7 @@ class MessageFormatter:
                     "strikethrough": f"<s>{escaped_text}</s>",
                     "code": f"<code>{escaped_text}</code>",
                     "pre": f"<pre>{escaped_text}</pre>",
-                    "text_link": f'<a href="{entity.url}">{escaped_text}</a>'
-                    if entity.url
-                    else escaped_text,
+                    "text_link": f'<a href="{entity.url}">{escaped_text}</a>' if entity.url else escaped_text,
                 }
 
             # Применяем форматирование
@@ -92,7 +92,7 @@ class MessageFormatter:
         return result
 
     @staticmethod
-    def get_escaped_text(message: Optional[Update], parse_mode: str = ParseMode.MARKDOWN_V2) -> str:
+    def get_escaped_text(message: Update | None, parse_mode: str = ParseMode.MARKDOWN_V2) -> str:
         """Возвращает текст с учётом форматирования (MarkdownV2 или HTML)."""
 
         print(f"message = {message}")
@@ -100,6 +100,4 @@ class MessageFormatter:
         if not message or not message.text:
             return ""
 
-        return MessageFormatter._apply_entities_to_text(
-            message.text, message.entities or [], parse_mode
-        )
+        return MessageFormatter._apply_entities_to_text(message.text, message.entities or [], parse_mode)

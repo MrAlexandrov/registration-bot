@@ -1,8 +1,9 @@
-import pytest
 import os
 import tempfile
 from unittest.mock import AsyncMock, MagicMock
-from telegram import Update, User, Message, Chat, Contact
+
+import pytest
+from telegram import Chat, Contact, Message, Update, User
 from telegram.ext import CallbackContext
 
 
@@ -10,11 +11,12 @@ from telegram.ext import CallbackContext
 def test_db():
     """Create a temporary test database for each test."""
     # Create a temporary database file
-    fd, db_path = tempfile.mkstemp(suffix='.sqlite')
+    fd, db_path = tempfile.mkstemp(suffix=".sqlite")
     os.close(fd)
 
     # Import and initialize with test database
     from src.user_storage import UserStorage
+
     test_storage = UserStorage(db_path)
 
     yield test_storage
@@ -22,7 +24,7 @@ def test_db():
     # Cleanup
     try:
         os.unlink(db_path)
-    except:
+    except OSError:
         pass
 
 
@@ -36,6 +38,7 @@ def user_storage(test_db):
 def registration_flow(user_storage):
     """Create RegistrationFlow with test user_storage."""
     from src.registration_handler import RegistrationFlow
+
     return RegistrationFlow(user_storage)
 
 
@@ -114,7 +117,19 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
         mock_update.callback_query = None
 
         # For fields with options, we need to simulate an inline query
-        if field in ["position", "desired_age", "probability_instructive", "probability_first", "probability_second", "education_choice", "work", "diplom", "rescheduling_session", "rescheduling_practice", "medical_book"]:
+        if field in [
+            "position",
+            "desired_age",
+            "probability_instructive",
+            "probability_first",
+            "probability_second",
+            "education_choice",
+            "work",
+            "diplom",
+            "rescheduling_session",
+            "rescheduling_practice",
+            "medical_book",
+        ]:
             # Step 1: Select an option
             mock_update.callback_query = AsyncMock()
             mock_update.callback_query.data = f"select|{value}"
