@@ -31,13 +31,22 @@ clean:
 	find . -type d -name '__pycache__' -exec rm -rf {} +
 
 up:
-	docker-compose build && docker-compose up -d && docker-compose logs -f
+	docker-compose down
+	docker-compose build --no-cache
+	docker-compose up -d
+	docker-compose logs -f
 
 down:
 	docker-compose down
 
+restart:
+	docker-compose down
+	docker-compose up -d
+	docker-compose logs -f
+
 docker-clean:
-	docker-compose down --rmi all
+	docker-compose down --rmi all --volumes --remove-orphans
+	docker system prune -f
 
 .PHONY: install run docker-build docker-run docker-stop docker-clean help
 

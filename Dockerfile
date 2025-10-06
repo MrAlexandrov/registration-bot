@@ -22,10 +22,10 @@ RUN poetry config virtualenvs.create false
 COPY pyproject.toml poetry.lock ./
 
 # Устанавливаем зависимости (без dev-зависимостей для production)
-RUN poetry install --only main --no-interaction --no-ansi
+RUN poetry install --only main --no-root --no-interaction --no-ansi
 
 # Копируем весь проект в контейнер
 COPY . .
 
 # Определяем команду запуска бота
-CMD ["python", "src/main.py"]
+CMD ["python", "-m", "src.main"]
