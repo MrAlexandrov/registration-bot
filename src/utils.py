@@ -1,6 +1,6 @@
 import os
 import sqlite3
-import time
+from datetime import datetime
 
 import pandas as pd
 
@@ -17,7 +17,9 @@ def get_actual_table():
     excel_dir = "excel"
     os.makedirs(excel_dir, exist_ok=True)
 
-    file_name = f"database_{time.clock_gettime(0)}.xlsx"
+    # Используем datetime для генерации уникального имени файла
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = f"database_{timestamp}.xlsx"
     file_path = os.path.join(excel_dir, file_name)
 
     df.to_excel(file_path, index=False)
