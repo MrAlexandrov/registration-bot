@@ -13,11 +13,11 @@ def test_storage():
     """Create a temporary test database for ORM tests."""
     fd, db_path = tempfile.mkstemp(suffix='.sqlite')
     os.close(fd)
-    
+
     storage = UserStorage(db_path)
-    
+
     yield storage
-    
+
     # Cleanup
     try:
         os.unlink(db_path)
@@ -31,9 +31,9 @@ class TestORMImplementation:
     def test_create_user(self, test_storage):
         """Test creating a new user."""
         test_user_id = 123456789
-        
+
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         user = test_storage.get_user(test_user_id)
         assert user is not None
         assert user['telegram_id'] == test_user_id
@@ -42,9 +42,9 @@ class TestORMImplementation:
     def test_create_duplicate_user(self, test_storage):
         """Test that creating duplicate user raises ValueError."""
         test_user_id = 123456789
-        
+
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         with pytest.raises(ValueError, match="already exists"):
             test_storage.create_user(test_user_id, initial_state="name")
 
@@ -52,9 +52,9 @@ class TestORMImplementation:
         """Test getting user data."""
         test_user_id = 123456789
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         user = test_storage.get_user(test_user_id)
-        
+
         assert user is not None
         assert user['telegram_id'] == test_user_id
         assert user['state'] == "name"
@@ -68,9 +68,9 @@ class TestORMImplementation:
         """Test updating a user field."""
         test_user_id = 123456789
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         test_storage.update_user(test_user_id, "name", "Иван Иванов")
-        
+
         user = test_storage.get_user(test_user_id)
         assert user['name'] == "Иван Иванов"
 
@@ -78,9 +78,9 @@ class TestORMImplementation:
         """Test updating user state."""
         test_user_id = 123456789
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         test_storage.update_state(test_user_id, "birth_date")
-        
+
         user = test_storage.get_user(test_user_id)
         assert user['state'] == "birth_date"
 
@@ -90,9 +90,9 @@ class TestORMImplementation:
         test_storage.create_user(111111111, initial_state="name")
         test_storage.create_user(222222222, initial_state="phone")
         test_storage.create_user(333333333, initial_state="email")
-        
+
         all_users = test_storage.get_all_users()
-        
+
         assert len(all_users) == 3
         assert 111111111 in all_users
         assert 222222222 in all_users
@@ -103,9 +103,9 @@ class TestORMImplementation:
         # Create multiple users
         test_storage.create_user(111111111, initial_state="name")
         test_storage.create_user(222222222, initial_state="phone")
-        
+
         count = test_storage.get_users_count()
-        
+
         assert count == 2
 
     def test_get_users_by_state(self, test_storage):
@@ -114,9 +114,9 @@ class TestORMImplementation:
         test_storage.create_user(111111111, initial_state="name")
         test_storage.create_user(222222222, initial_state="birth_date")
         test_storage.create_user(333333333, initial_state="birth_date")
-        
+
         users_in_state = test_storage.get_users_by_state("birth_date")
-        
+
         assert len(users_in_state) == 2
         user_ids = [user['telegram_id'] for user in users_in_state]
         assert 222222222 in user_ids
@@ -126,9 +126,9 @@ class TestORMImplementation:
         """Test deleting a user."""
         test_user_id = 123456789
         test_storage.create_user(test_user_id, initial_state="name")
-        
+
         deleted = test_storage.delete_user(test_user_id)
-        
+
         assert deleted is True
         user = test_storage.get_user(test_user_id)
         assert user is None
