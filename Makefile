@@ -8,20 +8,20 @@ include .env
 export
 
 install:
-	pip install -r requirements.txt
+	poetry install
 
 run:
-	python3 -m src.main
+	poetry run python -m src.main
 
 test:
-	PYTHONPATH=. pytest tests
+	poetry run pytest tests
 
 lint:
-	ruff check src tests
+	poetry run ruff check src tests
 
 format:
-	ruff check --fix src tests
-	ruff format src tests
+	poetry run ruff check --fix src tests
+	poetry run ruff format src tests
 
 dump:
 	bash dump.sh

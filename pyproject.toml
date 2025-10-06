@@ -1,3 +1,28 @@
+[tool.poetry]
+name = "registration-bot"
+version = "1.0.0"
+description = "Telegram bot for user registration with survey functionality"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-telegram-bot = "21.6"
+python-dotenv = "1.0.1"
+pandas = "2.2.3"
+openpyxl = "3.1.5"
+sqlalchemy = "2.0.36"
+alembic = "1.14.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.23.0"
+ruff = "0.8.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
