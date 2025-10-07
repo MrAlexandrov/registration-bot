@@ -34,27 +34,38 @@ class Config:
         except ValueError as e:
             raise ValueError(f"ROOT_ID должен быть числом, получено: {root_id_str}") from e
 
-        # Поддержка множественных администраторов
-        admin_ids_str = getenv("ADMIN_IDS", str(self.root_id))
-        try:
-            self.admin_ids = {int(id_str.strip()) for id_str in admin_ids_str.split(",") if id_str.strip()}
-        except ValueError as e:
-            raise ValueError(f"ADMIN_IDS должны быть числами, разделёнными запятыми. Получено: {admin_ids_str}") from e
+        # Deprecated: ADMIN_IDS and TABLE_GETTERS are now managed through permission system
+        # Keep for backward compatibility but log warning
+        admin_ids_str = getenv("ADMIN_IDS")
+        if admin_ids_str:
+            logger = __import__("logging").getLogger(__name__)
+            logger.warning(
+                "ADMIN_IDS is deprecated. Use permission system instead: " "/grant_permission <user_id> admin"
+            )
+            try:
+                self.admin_ids = {int(id_str.strip()) for id_str in admin_ids_str.split(",") if id_str.strip()}
+            except ValueError as e:
+                raise ValueError(
+                    f"ADMIN_IDS должны быть числами, разделёнными запятыми. Получено: {admin_ids_str}"
+                ) from e
+        else:
+            self.admin_ids = {self.root_id}
 
-        if not self.admin_ids:
-            raise ValueError("Список администраторов пуст! Проверьте ADMIN_IDS или ROOT_ID")
-
-        # Поддержка множественных получателей таблиц
-        table_getters_str = getenv("TABLE_GETTERS", admin_ids_str)
-        try:
-            self.table_getters = {int(id_str.strip()) for id_str in table_getters_str.split(",") if id_str.strip()}
-        except ValueError as e:
-            raise ValueError(
-                f"TABLE_GETTERS должны быть числами, разделёнными запятыми. Получено: {table_getters_str}"
-            ) from e
-
-        if not self.table_getters:
-            raise ValueError("Список получателей таблиц пуст! Проверьте TABLE_GETTERS")
+        table_getters_str = getenv("TABLE_GETTERS")
+        if table_getters_str:
+            logger = __import__("logging").getLogger(__name__)
+            logger.warning(
+                "TABLE_GETTERS is deprecated. Use permission system instead: "
+                "/grant_permission <user_id> table_viewer"
+            )
+            try:
+                self.table_getters = {int(id_str.strip()) for id_str in table_getters_str.split(",") if id_str.strip()}
+            except ValueError as e:
+                raise ValueError(
+                    f"TABLE_GETTERS должны быть числами, разделёнными запятыми. Получено: {table_getters_str}"
+                ) from e
+        else:
+            self.table_getters = {self.root_id}
 
         # Используем новую систему конфигурации опроса
         self.survey_config = registration_survey

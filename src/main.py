@@ -2,6 +2,9 @@ import logging
 
 from telegram.ext import Application, CallbackQueryHandler, ChatMemberHandler, CommandHandler, MessageHandler, filters
 
+from .admin_commands import admin_commands
+from .chat_tracker import chat_tracker
+from .error_notifier import error_notifier
 from .registration_handler import RegistrationFlow
 from .settings import BOT_TOKEN
 from .user_storage import user_storage
@@ -15,8 +18,11 @@ registration_flow = RegistrationFlow(user_storage)
 
 
 async def error_handler(update, context):
-    """Log Errors caused by Updates."""
+    """Log Errors caused by Updates and notify superuser chat."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+    # Send error notification to superuser chat
+    await error_notifier.notify_error(context, context.error, update)
 
 
 async def start(update, context):
@@ -33,13 +39,22 @@ async def track_chat_member_updates(update, context):
     """
     Отслеживает изменения статуса бота в чате с пользователем.
     Срабатывает когда пользователь блокирует или разблокирует бота.
+    Работает только для приватных чатов (не групп).
     """
     result = update.my_chat_member
+    chat = result.chat
     user_id = result.from_user.id
     old_status = result.old_chat_member.status
     new_status = result.new_chat_member.status
 
-    logger.info(f"Chat member update for user {user_id}: {old_status} -> {new_status}")
+    logger.info(
+        f"Chat member update in chat {chat.id} (type: {chat.type}) for user {user_id}: {old_status} -> {new_status}"
+    )
+
+    # Обрабатываем только приватные чаты (блокировка/разблокировка бота)
+    if chat.type != "private":
+        logger.debug(f"Ignoring chat member update in non-private chat {chat.id}")
+        return
 
     # Проверяем, существует ли пользователь в БД
     user = user_storage.get_user(user_id)
@@ -58,26 +73,69 @@ async def track_chat_member_updates(update, context):
         user_storage.update_user(user_id, "is_blocked", 0)
 
 
+async def handle_admin_command(update, context):
+    """Handle admin commands in both private and group chats."""
+    await admin_commands.handle_admin_command(update, context)
+
+
+async def post_init(application):
+    """Initialize bot after startup - grant ROOT user admin permissions."""
+    from .config import config
+    from .permissions import Permission, permission_manager
+
+    logger.info("Initializing ROOT user permissions...")
+
+    # Grant all permissions to ROOT user
+    root_id = config.root_id
+    permissions_to_grant = [Permission.ADMIN, Permission.TABLE_VIEWER, Permission.MESSAGE_SENDER, Permission.STAFF]
+
+    for perm in permissions_to_grant:
+        try:
+            permission_manager.grant_permission(root_id, perm, 0)
+            logger.info(f"Granted {perm.value} to ROOT user {root_id}")
+        except Exception as e:
+            logger.debug(f"Permission {perm.value} already exists for ROOT or error: {e}")
+
+    logger.info("ROOT user initialization complete")
+
+
 def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # on different commands - answer in Telegram
-    application.add_handler(CommandHandler("start", start))
+    # Admin commands - work in both private and group chats
+    admin_command_list = [
+        "grant_permission",
+        "revoke_permission",
+        "list_permissions",
+        "list_users",
+        "register_staff_chat",
+        "register_superuser_chat",
+        "my_permissions",
+        "help",
+    ]
+    for cmd in admin_command_list:
+        application.add_handler(CommandHandler(cmd, handle_admin_command))
 
-    # on non command i.e message - echo the message on Telegram
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    application.add_handler(MessageHandler(filters.CONTACT, handle_message))
+    # Registration commands - only in private chats
+    application.add_handler(CommandHandler("start", start, filters=filters.ChatType.PRIVATE))
+
+    # Message handlers - only in private chats for registration
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.CONTACT & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(CallbackQueryHandler(registration_flow.handle_inline_query))
 
     # Track when users block/unblock the bot
     application.add_handler(ChatMemberHandler(track_chat_member_updates, ChatMemberHandler.MY_CHAT_MEMBER))
 
-    # log all errors
+    # Track chat member updates for staff chat
+    application.add_handler(ChatMemberHandler(chat_tracker.handle_chat_member_update, ChatMemberHandler.CHAT_MEMBER))
+
+    # Error handler
     application.add_error_handler(error_handler)
 
     # Run the bot until the user presses Ctrl-C
     logger.info("Bot started successfully!")
-    application.run_polling(allowed_updates=["message", "callback_query", "my_chat_member"])
+    application.run_polling(allowed_updates=["message", "callback_query", "my_chat_member", "chat_member"])
 
 
 if __name__ == "__main__":
