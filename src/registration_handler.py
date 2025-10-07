@@ -15,6 +15,7 @@ from .constants import (
     STATE,
 )
 from .message_formatter import MessageFormatter
+from .message_sender import message_sender
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
 from .user_storage import user_storage
@@ -40,6 +41,12 @@ class RegistrationFlow:
             await self.state_handler.transition_state(update, context, self.steps[0])
         else:
             logger.info(f"User {user_id} already exists in state '{user[STATE]}'")
+
+            # Если пользователь был заблокирован, но теперь пишет боту - разблокируем
+            if user.get("is_blocked"):
+                logger.info(f"User {user_id} was blocked but now interacting - unblocking")
+                self.user_storage.update_user(user_id, "is_blocked", 0)
+
             await self.state_handler.transition_state(update, context, user[STATE])
 
     async def handle_input(self, update, context):
@@ -47,9 +54,10 @@ class RegistrationFlow:
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
         if user is None:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново",
+            await message_sender.send_message(
+                context.bot,
+                user_id,
+                "Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново",
             )
             await self.handle_command(update, context)
             return
@@ -63,9 +71,10 @@ class RegistrationFlow:
         config = self.state_handler.get_config_by_state(state)
         if not config:
             logger.error(f"Invalid state '{state}' for user {user_id}")
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+            await message_sender.send_message(
+                context.bot,
+                user_id,
+                "Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
                 parse_mode=ParseMode.MARKDOWN,
             )
             return
@@ -76,7 +85,7 @@ class RegistrationFlow:
         )
         if has_options:
             logger.debug("User sent message while inline keyboard is active")
-            await context.bot.send_message(chat_id=user_id, text="Пожалуйста, воспользуйся кнопками")
+            await message_sender.send_message(context.bot, user_id, "Пожалуйста, воспользуйся кнопками")
             return
 
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
@@ -96,18 +105,22 @@ class RegistrationFlow:
                 await self.state_handler.transition_state(update, context, REGISTERED)
                 return True
             all_users_id = self.user_storage.get_all_users()
-            logger.info(f"Sending message to all users: {all_users_id}")
-            for current_user_id in all_users_id:
-                try:
-                    await context.bot.send_message(
-                        chat_id=current_user_id, text=user_input, parse_mode=ParseMode.MARKDOWN_V2
-                    )
-                except Exception as e:
-                    logger.error(f"Can't send message to user {current_user_id}: {e}")
-            await context.bot.send_message(
-                chat_id=user_id, text=f"Сообщение было отправлено {len(all_users_id)} пользователям"
+            logger.info(f"Sending message to {len(all_users_id)} users")
+
+            # Используем массовую рассылку с автоматической обработкой блокировок
+            stats = await message_sender.send_message_to_multiple(
+                context.bot,
+                all_users_id,
+                user_input,
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
-            logger.info(f"Message '{update.message.text}' was sent to {len(all_users_id)} users")
+
+            await message_sender.send_message(
+                context.bot,
+                user_id,
+                f"Сообщение отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+            )
+            logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
             await self.state_handler.transition_state(update, context, REGISTERED)
             return True
         return False
@@ -141,14 +154,15 @@ class RegistrationFlow:
             field_config = self.get_config_by_label(user_input)
             if not field_config:
                 logger.error(f"Field '{user_input}' not found for user {user_id}")
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text="Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование",
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    "Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование",
                 )
                 return
 
             if not field_config.editable:
-                await context.bot.send_message(chat_id=user_id, text="Это поле нельзя редактировать.")
+                await message_sender.send_message(context.bot, user_id, "Это поле нельзя редактировать.")
                 return
 
             await self.state_handler.transition_state(update, context, f"edit_{field_config.field_name}")
@@ -168,9 +182,10 @@ class RegistrationFlow:
 
         if not field_config:
             logger.error(f"Field '{actual_state}' not found for user {user_id}")
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+            await message_sender.send_message(
+                context.bot,
+                user_id,
+                "Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
                 parse_mode=ParseMode.MARKDOWN,
             )
             return
@@ -181,7 +196,7 @@ class RegistrationFlow:
         if field_config.validator:
             is_valid, error_message = field_config.validator(user_input)
             if not is_valid:
-                await context.bot.send_message(chat_id=user_id, text=error_message)
+                await message_sender.send_message(context.bot, user_id, error_message)
                 return
 
         formatted_db_value = self.apply_db_formatter(actual_state, user_input)
@@ -236,7 +251,7 @@ class RegistrationFlow:
 
         elif action == "done":
             if not selected_options:
-                await context.bot.send_message(chat_id=user_id, text="Нужно что-то выбрать!")
+                await message_sender.send_message(context.bot, user_id, "Нужно что-то выбрать!")
                 return
             await self.clear_inline_keyboard(update)
             next_state = self.state_handler.get_next_state(state)

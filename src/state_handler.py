@@ -25,6 +25,7 @@ from .constants import (
     SKIP_IF,
     STATE,
 )
+from .message_sender import message_sender
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 
 logger = logging.getLogger(__name__)
@@ -52,9 +53,10 @@ class StateHandler:
                 config = self.get_admin_config_by_state(state)
             else:
                 logger.error(f"Configuration for state '{state}' not found for user {user_id}")
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text="Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    "Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
                     parse_mode=ParseMode.MARKDOWN,
                 )
                 return
@@ -86,8 +88,8 @@ class StateHandler:
         reply_markup = self.get_reply_markup(config, user_id, state, user_data)
 
         logger.info(f"Sending message to user {user_id}: {message}")
-        await context.bot.send_message(
-            chat_id=user_id, text=message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
+        await message_sender.send_message(
+            context.bot, user_id, message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
         )
 
     def get_reply_markup(self, config, user_id, state, user_data):

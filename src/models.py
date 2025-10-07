@@ -37,6 +37,7 @@ def create_user_model(survey_config):
         "id": Column(Integer, primary_key=True, autoincrement=True),
         "telegram_id": Column(Integer, unique=True, nullable=False, index=True),
         "state": Column(String, nullable=False),
+        "is_blocked": Column(Integer, default=0, nullable=False),  # 0 = не заблокирован, 1 = заблокирован
         "created_at": Column(DateTime, default=datetime.utcnow, nullable=False),
         "updated_at": Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False),
     }
