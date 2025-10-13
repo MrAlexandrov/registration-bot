@@ -3,7 +3,7 @@ import tempfile
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from telegram import Chat, Contact, Message, Update, User
+from telegram import Chat, Message, Update, User
 from telegram.ext import CallbackContext
 
 

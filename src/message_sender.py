@@ -66,7 +66,7 @@ class MessageSender:
             try:
                 sent_message = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
                 logger.debug(f"Сообщение успешно отправлено пользователю {chat_id}")
-                
+
                 # Log outgoing message
                 message_logger.log_outgoing_message(
                     telegram_id=chat_id,
@@ -75,7 +75,7 @@ class MessageSender:
                     message_type="text",
                     reply_to_message_id=kwargs.get("reply_to_message_id"),
                 )
-                
+
                 return True
 
             except Forbidden as e:

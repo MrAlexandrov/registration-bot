@@ -323,7 +323,7 @@ class RegistrationSurveyConfig:
             # Пропускаем скрытые поля
             if field.hidden:
                 continue
-            
+
             value = user_data.get(field.field_name, "Не указано")
             if field.display_formatter:
                 value = field.display_formatter(value)

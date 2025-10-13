@@ -52,7 +52,7 @@ class Database:
 
     def create_tables(self):
         """Create all tables defined in models."""
-        from .models import DynamicBase, Message, get_user_model
+        from .models import DynamicBase, get_user_model
 
         # Ensure User model is initialized
         get_user_model()

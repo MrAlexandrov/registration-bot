@@ -167,20 +167,20 @@ class TestRegistrationSurveyConfig:
     def test_generate_registered_message_hides_hidden_fields(self):
         """Тест что скрытые поля не отображаются в сообщении регистрации."""
         config = RegistrationSurveyConfig()
-        
+
         # Создаем тестовые данные пользователя
         user_data = {
             "username": "@testuser",
             "name": "Иван Иванов",
         }
-        
+
         # Генерируем сообщение
         message = config._generate_registered_message(user_data)
-        
+
         # Проверяем что username (скрытое поле) не отображается
         assert "Никнейм" not in message
         assert "@testuser" not in message
-        
+
         # Проверяем что name (видимое поле) отображается
         assert "Имя" in message
         assert "Иван Иванов" in message

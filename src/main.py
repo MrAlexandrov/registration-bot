@@ -35,7 +35,7 @@ async def handle_message(update, context):
     """Обрабатывает сообщения пользователя."""
     # Log incoming message
     message_logger.log_incoming_message(update)
-    
+
     await registration_flow.handle_input(update, context)
 
 
@@ -126,7 +126,7 @@ def main():
     # Message handlers - only in private chats for registration
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(MessageHandler(filters.CONTACT & filters.ChatType.PRIVATE, handle_message))
-    
+
     # Media message handlers - log all media types
     application.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(MessageHandler(filters.Document.ALL & filters.ChatType.PRIVATE, handle_message))
@@ -136,7 +136,7 @@ def main():
     application.add_handler(MessageHandler(filters.Sticker.ALL & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(MessageHandler(filters.LOCATION & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(MessageHandler(filters.POLL & filters.ChatType.PRIVATE, handle_message))
-    
+
     application.add_handler(CallbackQueryHandler(registration_flow.handle_inline_query))
 
     # Track when users block/unblock the bot

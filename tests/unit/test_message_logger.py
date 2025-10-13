@@ -2,9 +2,10 @@
 Unit tests for message logger functionality.
 """
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
+
+import pytest
 
 from src.message_logger import MessageLogger
 from src.models import Message
