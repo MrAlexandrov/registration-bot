@@ -13,7 +13,7 @@ repos:
         always_run: true
         stages: [pre-commit]
 
-  # Run make test before commit
+  # Run make test before push
   - repo: local
     hooks:
       - id: make-test
@@ -22,4 +22,4 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-commit]
+        stages: [pre-push]
