@@ -145,7 +145,7 @@ class RegistrationSurveyConfig:
                 editable=True,
             ),
             SurveyField(
-                field_name="phone_number",
+                field_name="phone",
                 label="Номер телефона",
                 message="Введи свой номер телефона (или поделись через телеграмм)",
                 validator=validate_phone,
@@ -153,7 +153,7 @@ class RegistrationSurveyConfig:
                 display_formatter=format_phone_display,
                 request_contact=True,
                 editable=True,
-            )
+            ),
         ]
 
     def _create_post_registration_states(self) -> list[dict[str, Any]]:

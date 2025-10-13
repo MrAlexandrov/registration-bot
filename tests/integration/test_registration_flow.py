@@ -3,7 +3,7 @@ import tempfile
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from telegram import Chat, Message, Update, User
+from telegram import Chat, Contact, Message, Update, User
 from telegram.ext import CallbackContext
 
 
@@ -91,8 +91,9 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
 
     test_data = {
         "name": "Иван",
+        "group": "РК6-81Б",
+        "phone": "71234567890",
         # "birth_date": "10.03.2002",
-        # "phone": "71234567890",
         # "username": "testuser",
         # "email": "test@example.com",
         # "position": "Вожатый",
@@ -181,23 +182,23 @@ async def test_editing_data(registration_flow, mock_user, mock_chat, mock_contex
     assert registration_flow.user_storage.get_user(user_id)["state"] == "registered"
 
 
-# @pytest.mark.asyncio
-# async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_context):
-#     """Тест кнопки 'Поделиться номером'"""
-#     user_id = mock_user.id
-#     registration_flow.user_storage.create_user(user_id)
-#     registration_flow.user_storage.update_state(user_id, "phone")
+@pytest.mark.asyncio
+async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_context):
+    """Тест кнопки 'Поделиться номером'"""
+    user_id = mock_user.id
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "phone")
 
-#     contact = MagicMock(spec=Contact, phone_number="79998887766", user_id=user_id, first_name="TestUser")
-#     mock_update = MagicMock(spec=Update)
-#     mock_update.effective_user = mock_user
-#     mock_update.message = create_mock_message(mock_chat, mock_user, contact=contact)
-#     mock_update.callback_query = None
+    contact = MagicMock(spec=Contact, phone_number="79998887766", user_id=user_id, first_name="TestUser")
+    mock_update = MagicMock(spec=Update)
+    mock_update.effective_user = mock_user
+    mock_update.message = create_mock_message(mock_chat, mock_user, contact=contact)
+    mock_update.callback_query = None
 
-#     await registration_flow.handle_input(mock_update, mock_context)
+    await registration_flow.handle_input(mock_update, mock_context)
 
-#     assert registration_flow.user_storage.get_user(user_id)["phone"] == "79998887766"
-#     assert registration_flow.user_storage.get_user(user_id)["state"] == "email"
+    assert registration_flow.user_storage.get_user(user_id)["phone"] == "79998887766"
+    # assert registration_flow.user_storage.get_user(user_id)["state"] == "email"
 
 
 # @pytest.mark.asyncio
