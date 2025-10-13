@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text, BigInteger
+from sqlalchemy import BigInteger, Column, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import declarative_base
 
 logger = logging.getLogger(__name__)

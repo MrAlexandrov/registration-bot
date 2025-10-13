@@ -4,9 +4,9 @@ Message logger for tracking all messages exchanged between users and the bot.
 
 import logging
 from datetime import datetime
-from typing import Optional
 
-from telegram import Message as TelegramMessage, Update
+from telegram import Message as TelegramMessage
+from telegram import Update
 
 from .database import db
 from .models import Message
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class MessageLogger:
     """Handles logging of all messages to the database."""
 
-    def log_incoming_message(self, update: Update) -> Optional[int]:
+    def log_incoming_message(self, update: Update) -> int | None:
         """
         Log an incoming message from a user.
 
@@ -101,8 +101,8 @@ class MessageLogger:
         chat_id: int,
         sent_message: TelegramMessage,
         message_type: str = "text",
-        reply_to_message_id: Optional[int] = None,
-    ) -> Optional[int]:
+        reply_to_message_id: int | None = None,
+    ) -> int | None:
         """
         Log an outgoing message sent by the bot.
 
@@ -210,7 +210,7 @@ class MessageLogger:
         self,
         telegram_id: int,
         limit: int = 100,
-        direction: Optional[str] = None,
+        direction: str | None = None,
     ) -> list[Message]:
         """
         Retrieve messages for a specific user.
