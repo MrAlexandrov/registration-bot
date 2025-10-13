@@ -201,7 +201,7 @@ class PermissionManager:
 
             return user_ids
 
-    def register_chat(self, chat_id: int, chat_type: str, chat_title: str = None) -> bool:
+    def register_chat(self, chat_id: int, chat_type: str, chat_title: str | None = None) -> bool:
         """
         Register a bot chat (staff chat, superuser chat, etc.).
 

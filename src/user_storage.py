@@ -22,7 +22,7 @@ class UserStorage:
     All methods maintain backward compatibility with the previous implementation.
     """
 
-    def __init__(self, db_path="data/database.sqlite"):
+    def __init__(self, db_path : str ="data/database.sqlite"):
         """
         Initialize user storage.
 

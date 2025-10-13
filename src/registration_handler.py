@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from telegram import Update
 from telegram.constants import ParseMode
@@ -98,7 +99,7 @@ class RegistrationFlow:
 
         await self.process_data_input(update, context, state, user_input)
 
-    async def handle_admin_input(self, update: Update, context, state):
+    async def handle_admin_input(self, update: Update, context, state : list[dict[str, Any]]):
         user_id = update.message.from_user.id
         if state == ADMIN_SEND_MESSAGE:
             user_input = MessageFormatter.get_escaped_text(update.message)
@@ -126,7 +127,7 @@ class RegistrationFlow:
             return True
         return False
 
-    async def process_action_input(self, update: Update, context, state, user_input):
+    async def process_action_input(self, update: Update, context, state : list[dict[str, Any]], user_input):
         """Обрабатывает кнопки в состояниях registered и edit."""
         user_id = update.message.from_user.id
 
@@ -168,7 +169,7 @@ class RegistrationFlow:
 
             await self.state_handler.transition_state(update, context, f"edit_{field_config.field_name}")
 
-    def apply_db_formatter(self, field_name, value):
+    def apply_db_formatter(self, field_name : str, value):
         """Применяет форматтер для базы данных, если он указан в конфиге."""
         field_config = SURVEY_CONFIG.get_field_by_name(field_name)
         if field_config and field_config.db_formatter:
