@@ -1,0 +1,25 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+repos:
+  # Run make format before commit
+  - repo: local
+    hooks:
+      - id: make-format
+        name: Run make format
+        entry: make format
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+  # Run make test before commit
+  - repo: local
+    hooks:
+      - id: make-test
+        name: Run make test
+        entry: make test
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

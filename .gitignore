@@ -16,3 +16,4 @@ notes.md
 excel/
 .DS_Store
 .coverage
+poetry.lock
