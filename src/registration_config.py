@@ -63,7 +63,7 @@ class SurveyField:
     # Основные параметры
     field_name: str  # Поле в базе данных
     label: str  # Что показать пользователю
-    message: str  # Текст вопроса
+    message: str | None = None  # Текст вопроса
 
     # Валидация
     validator: Callable[[str], tuple[bool, str | None]] | None = None  # Как валидировать
@@ -102,7 +102,6 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="username",
                 label="Никнейм",
-                message="",
                 db_formatter=format_username_db,
                 display_formatter=format_username_display,
                 auto_collect=auto_collect_username,
