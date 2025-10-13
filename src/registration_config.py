@@ -84,6 +84,9 @@ class SurveyField:
     # Настройки редактирования
     editable: bool = True  # Можно ли редактировать
 
+    # Настройки отображения
+    hidden: bool = False  # Скрыть поле от отображения пользователю
+
     # Тип поля в БД
     db_type: str = "TEXT"  # Тип поля в БД
 
@@ -106,6 +109,7 @@ class RegistrationSurveyConfig:
                 display_formatter=format_username_display,
                 auto_collect=auto_collect_username,
                 editable=False,
+                hidden=True,  # Скрываем username от отображения пользователю
             ),
             SurveyField(
                 field_name="name",
@@ -316,6 +320,10 @@ class RegistrationSurveyConfig:
         message = "Отлично! Вот, что я запомнил, проверь, пожалуйста, что всё верно:\n"
 
         for field in self._fields:
+            # Пропускаем скрытые поля
+            if field.hidden:
+                continue
+            
             value = user_data.get(field.field_name, "Не указано")
             if field.display_formatter:
                 value = field.display_formatter(value)

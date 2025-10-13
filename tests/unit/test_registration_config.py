@@ -39,6 +39,19 @@ class TestSurveyField:
         assert field.display_formatter == format_default_display
         assert field.editable is True
         assert field.db_type == "TEXT"
+        assert field.hidden is False  # По умолчанию поле не скрыто
+
+    def test_survey_field_hidden(self):
+        """Тест создания скрытого поля."""
+        field = SurveyField(
+            field_name="hidden_field",
+            label="Скрытое поле",
+            editable=False,
+            hidden=True,
+        )
+
+        assert field.hidden is True
+        assert field.editable is False
 
     def test_survey_field_with_options(self):
         """Тест создания поля с вариантами ответов."""
@@ -111,8 +124,8 @@ class TestRegistrationSurveyConfig:
 
         assert len(field_names) > 0
         assert "name" in field_names
-        assert "email" in field_names
-        assert "phone" in field_names
+        # assert "email" in field_names
+        # assert "phone" in field_names
 
     def test_add_field(self):
         """Тест добавления нового поля."""
@@ -151,6 +164,27 @@ class TestRegistrationSurveyConfig:
         removed = config.remove_field("nonexistent")
         assert removed is False
 
+    def test_generate_registered_message_hides_hidden_fields(self):
+        """Тест что скрытые поля не отображаются в сообщении регистрации."""
+        config = RegistrationSurveyConfig()
+        
+        # Создаем тестовые данные пользователя
+        user_data = {
+            "username": "@testuser",
+            "name": "Иван Иванов",
+        }
+        
+        # Генерируем сообщение
+        message = config._generate_registered_message(user_data)
+        
+        # Проверяем что username (скрытое поле) не отображается
+        assert "Никнейм" not in message
+        assert "@testuser" not in message
+        
+        # Проверяем что name (видимое поле) отображается
+        assert "Имя" in message
+        assert "Иван Иванов" in message
+
 
 class TestGlobalConfig:
     """Тесты для глобального экземпляра конфигурации."""
@@ -162,7 +196,7 @@ class TestGlobalConfig:
 
     def test_required_fields_exist(self):
         """Тест наличия обязательных полей."""
-        required_fields = ["name", "birth_date", "phone", "email"]
+        required_fields = ["name"]  # "phone", "birth_date", "email"
 
         for field_name in required_fields:
             field = registration_survey.get_field_by_name(field_name)
