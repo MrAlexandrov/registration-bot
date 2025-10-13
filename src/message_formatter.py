@@ -1,6 +1,6 @@
 import re
 
-from telegram import Update
+from telegram import Message, MessageEntity
 from telegram.constants import ParseMode
 
 
@@ -18,7 +18,7 @@ class MessageFormatter:
         return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     @staticmethod
-    def _apply_entities_to_text(text: str, entities: list, mode: str) -> str:
+    def _apply_entities_to_text(text: str, entities: tuple[MessageEntity, ...] | list[MessageEntity], mode: str) -> str:
         """Применяет форматирование к тексту (MarkdownV2 или HTML)."""
 
         if not entities:
@@ -92,7 +92,7 @@ class MessageFormatter:
         return result
 
     @staticmethod
-    def get_escaped_text(message: Update | None, parse_mode: str = ParseMode.MARKDOWN_V2) -> str:
+    def get_escaped_text(message: Message | None, parse_mode: str = ParseMode.MARKDOWN_V2) -> str:
         """Возвращает текст с учётом форматирования (MarkdownV2 или HTML)."""
 
         print(f"message = {message}")

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ErrorNotifier:
     """Handles error notifications to superuser chat."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.permission_manager = permission_manager
 
     async def notify_error(
@@ -27,7 +27,7 @@ class ErrorNotifier:
         error: Exception,
         update: Update | None = None,
         additional_info: str | None = None,
-    ):
+    ) -> None:
         """
         Send error notification to superuser chat.
 
@@ -105,7 +105,7 @@ class ErrorNotifier:
 
         return message
 
-    async def notify_info(self, context: ContextTypes.DEFAULT_TYPE, title: str, message: str):
+    async def notify_info(self, context: ContextTypes.DEFAULT_TYPE, title: str, message: str) -> None:
         """
         Send informational notification to superuser chat.
 

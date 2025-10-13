@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ChatTracker:
     """Tracks chat members and manages staff permissions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.permission_manager = permission_manager
 
     async def handle_chat_member_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,7 +42,7 @@ class ChatTracker:
         if staff_chat_id and chat_id == staff_chat_id:
             await self._handle_staff_chat_update(user_id, old_status, new_status)
 
-    async def _handle_staff_chat_update(self, user_id: int, old_status: str, new_status: str):
+    async def _handle_staff_chat_update(self, user_id: int, old_status: str, new_status: str) -> None:
         """
         Handle staff chat member updates.
         Grant STAFF permission when user joins, revoke when they leave.
@@ -65,7 +65,7 @@ class ChatTracker:
                 self.permission_manager.revoke_permission(user_id, Permission.STAFF)
                 logger.info(f"Revoked STAFF permission from user {user_id} (left staff chat)")
 
-    async def sync_staff_chat_members(self, context: ContextTypes.DEFAULT_TYPE):
+    async def sync_staff_chat_members(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Sync all members of staff chat with STAFF permission.
         This should be called periodically or on bot startup.

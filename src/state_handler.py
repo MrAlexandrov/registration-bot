@@ -11,6 +11,7 @@ from telegram import (
     Update,
 )
 from telegram.constants import ParseMode
+from telegram.ext import ContextTypes
 
 from src.user_storage import UserStorage
 
@@ -42,7 +43,7 @@ class StateHandler:
         self.states_config = {state[STATE]: state for state in SURVEY_CONFIG.post_registration_states}
         self.admin_states_config = {state[STATE]: state for state in SURVEY_CONFIG.admin_states}
 
-    async def transition_state(self, update: Update, context, state : list[dict[str, Any]]):
+    async def transition_state(self, update: Update, context: ContextTypes.DEFAULT_TYPE, state: str) -> None:
         if update.callback_query:
             user_id = update.callback_query.from_user.id
         else:
@@ -96,7 +97,9 @@ class StateHandler:
             context.bot, user_id, message, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
         )
 
-    def get_reply_markup(self, config, user_id, state : list[dict[str, Any]], user_data):
+    def get_reply_markup(
+        self, config: Any, user_id: int, state: str, user_data: dict[str, Any]
+    ) -> ReplyKeyboardMarkup | InlineKeyboardMarkup | ReplyKeyboardRemove:
         actual_field_name = state.replace("edit_", "")
         # Для SurveyField используем атрибуты, для словарей - ключи
         if hasattr(config, "options"):
@@ -138,7 +141,7 @@ class StateHandler:
         else:
             return ReplyKeyboardRemove()
 
-    def get_next_state(self, state : list[dict[str, Any]]):
+    def get_next_state(self, state: str) -> str:
         actual_state = state.replace("edit_", "")
         if state.startswith("edit_"):
             return REGISTERED
@@ -148,7 +151,7 @@ class StateHandler:
                 return self.steps[current_index + 1]
         return REGISTERED
 
-    def get_config_by_state(self, state : list[dict[str, Any]]):
+    def get_config_by_state(self, state: str) -> Any:
         logger.debug(f"Searching for configuration for state '{state}'")
         if state.startswith("edit_"):
             original_field_name = state.replace("edit_", "")
@@ -165,7 +168,7 @@ class StateHandler:
             logger.error(f"Configuration for state '{state}' not found")
         return config
 
-    def get_admin_config_by_state(self, state : list[dict[str, Any]]):
+    def get_admin_config_by_state(self, state: str) -> dict[str, Any] | None:
         logger.debug(f"Searching for admin configuration for state '{state}'")
         config = self.admin_states_config.get(state)
         if config:
@@ -174,7 +177,7 @@ class StateHandler:
             logger.error(f"Admin configuration for state '{state}' not found")
         return config
 
-    def get_state_message(self, config, user_id):
+    def get_state_message(self, config: Any, user_id: int) -> str:
         # Для SurveyField используем field_name, для словарей - STATE
         state_name = config.field_name if hasattr(config, "field_name") else config[STATE]
         logger.debug(f"Formatting message for state '{state_name}'")
@@ -183,7 +186,7 @@ class StateHandler:
         # Для SurveyField используем message, для словарей - MESSAGE
         return config.message if hasattr(config, "message") else config[MESSAGE]
 
-    def get_registered_message(self, config, user_id):
+    def get_registered_message(self, config: Any, user_id: int) -> str:
         state_name = config.field_name if hasattr(config, "field_name") else config[STATE]
         if state_name != REGISTERED:
             logger.error(
@@ -212,7 +215,9 @@ class StateHandler:
             logger.debug(f"Prepared data for substitution: {user_data}")
             return message.format(**user_data)
 
-    def create_inline_keyboard(self, options, selected_options=None):
+    def create_inline_keyboard(
+        self, options: list[str], selected_options: list[str] | None = None
+    ) -> InlineKeyboardMarkup:
         selected_options = selected_options or []
         buttons = [
             InlineKeyboardButton(f"✅ {opt}" if opt in selected_options else opt, callback_data=f"select|{opt}")

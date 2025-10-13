@@ -22,7 +22,7 @@ class UserStorage:
     All methods maintain backward compatibility with the previous implementation.
     """
 
-    def __init__(self, db_path : str ="data/database.sqlite"):
+    def __init__(self, db_path: str = "data/database.sqlite") -> None:
         """
         Initialize user storage.
 
@@ -41,7 +41,7 @@ class UserStorage:
         # Create tables
         self._create_table()
 
-    def _create_table(self):
+    def _create_table(self) -> None:
         """Create database tables based on the User model."""
         try:
             db.create_tables()

@@ -40,7 +40,7 @@ class UserPermission(PermissionBase):
     granted_by = Column(BigInteger, nullable=True)  # Who granted this permission
     created_at = Column(DateTime, nullable=False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<UserPermission(telegram_id={self.telegram_id}, permission='{self.permission}')>"
 
 
@@ -56,18 +56,18 @@ class BotChat(PermissionBase):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, nullable=False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<BotChat(chat_id={self.chat_id}, type='{self.chat_type}')>"
 
 
 class PermissionManager:
     """Manages user permissions and role-based access control."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize permission manager and create tables."""
         self._create_tables()
 
-    def _create_tables(self):
+    def _create_tables(self) -> None:
         """Create permission tables in the database."""
         try:
             PermissionBase.metadata.create_all(bind=db.engine)

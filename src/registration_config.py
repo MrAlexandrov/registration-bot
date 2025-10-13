@@ -97,7 +97,7 @@ class SurveyField:
 class RegistrationSurveyConfig:
     """Конфигурация регистрационного опроса."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._fields = self._create_fields()
         self._post_registration_states = self._create_post_registration_states()
         self._admin_states = self._create_admin_states()

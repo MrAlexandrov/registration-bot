@@ -3,6 +3,7 @@ from typing import Any
 
 from telegram import Update
 from telegram.constants import ParseMode
+from telegram.ext import ContextTypes
 
 from .constants import (
     ADMIN_SEND_MESSAGE,
@@ -32,7 +33,7 @@ class RegistrationFlow:
         self.state_handler = StateHandler(user_storage)
         self.steps = [field.field_name for field in SURVEY_CONFIG.fields]
 
-    async def handle_command(self, update: Update, context):
+    async def handle_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обрабатывает команды, такие как /start."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
@@ -51,7 +52,7 @@ class RegistrationFlow:
 
             await self.state_handler.transition_state(update, context, user[STATE])
 
-    async def handle_input(self, update: Update, context):
+    async def handle_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обрабатывает пользовательский ввод для всех состояний."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
@@ -99,7 +100,7 @@ class RegistrationFlow:
 
         await self.process_data_input(update, context, state, user_input)
 
-    async def handle_admin_input(self, update: Update, context, state : list[dict[str, Any]]):
+    async def handle_admin_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, state: str) -> bool:
         user_id = update.message.from_user.id
         if state == ADMIN_SEND_MESSAGE:
             user_input = MessageFormatter.get_escaped_text(update.message)
@@ -127,7 +128,9 @@ class RegistrationFlow:
             return True
         return False
 
-    async def process_action_input(self, update: Update, context, state : list[dict[str, Any]], user_input):
+    async def process_action_input(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, state: str, user_input: str
+    ) -> None:
         """Обрабатывает кнопки в состояниях registered и edit."""
         user_id = update.message.from_user.id
 
@@ -169,14 +172,16 @@ class RegistrationFlow:
 
             await self.state_handler.transition_state(update, context, f"edit_{field_config.field_name}")
 
-    def apply_db_formatter(self, field_name : str, value):
+    def apply_db_formatter(self, field_name: str, value: str) -> str:
         """Применяет форматтер для базы данных, если он указан в конфиге."""
         field_config = SURVEY_CONFIG.get_field_by_name(field_name)
         if field_config and field_config.db_formatter:
             return field_config.db_formatter(value)
         return value
 
-    async def process_data_input(self, update: Update, context, state, user_input):
+    async def process_data_input(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE, state: str, user_input: str
+    ) -> None:
         """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
         user_id = update.effective_user.id
         actual_state = state.replace("edit_", "")
@@ -207,16 +212,16 @@ class RegistrationFlow:
         next_state = self.state_handler.get_next_state(state)
         await self.state_handler.transition_state(update, context, next_state)
 
-    def get_config_by_label(self, label):
+    def get_config_by_label(self, label: str) -> Any:
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
         return SURVEY_CONFIG.get_field_by_label(label)
 
-    async def clear_inline_keyboard(self, update):
+    async def clear_inline_keyboard(self, update: Update) -> None:
         """Удаляет только инлайн-клавиатуру, оставляя текст сообщения."""
         if update.callback_query:
             await update.callback_query.edit_message_reply_markup(reply_markup=None)
 
-    async def handle_inline_query(self, update: Update, context):
+    async def handle_inline_query(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Обрабатывает нажатия на инлайн-кнопки."""
         query = update.callback_query
         await query.answer()

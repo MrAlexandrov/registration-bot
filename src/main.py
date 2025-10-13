@@ -1,7 +1,15 @@
 import logging
 
 from telegram import Update
-from telegram.ext import Application, CallbackQueryHandler, ChatMemberHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    ChatMemberHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from .admin_commands import admin_commands
 from .chat_tracker import chat_tracker
@@ -19,20 +27,21 @@ logger = logging.getLogger(__name__)
 registration_flow = RegistrationFlow(user_storage)
 
 
-async def error_handler(update: Update, context):
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log Errors caused by Updates and notify superuser chat."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
     # Send error notification to superuser chat
-    await error_notifier.notify_error(context, context.error, update)
+    if context.error:
+        await error_notifier.notify_error(context, context.error, update if isinstance(update, Update) else None)
 
 
-async def start(update: Update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обрабатывает команду /start."""
     await registration_flow.handle_command(update, context)
 
 
-async def handle_message(update: Update, context):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обрабатывает сообщения пользователя."""
     # Log incoming message
     message_logger.log_incoming_message(update)
@@ -40,13 +49,16 @@ async def handle_message(update: Update, context):
     await registration_flow.handle_input(update, context)
 
 
-async def track_chat_member_updates(update: Update, context):
+async def track_chat_member_updates(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Отслеживает изменения статуса бота в чате с пользователем.
     Срабатывает когда пользователь блокирует или разблокирует бота.
     Работает только для приватных чатов (не групп).
     """
     result = update.my_chat_member
+    if not result:
+        return
+
     chat = result.chat
     user_id = result.from_user.id
     old_status = result.old_chat_member.status
@@ -78,12 +90,12 @@ async def track_chat_member_updates(update: Update, context):
         user_storage.update_user(user_id, "is_blocked", 0)
 
 
-async def handle_admin_command(update: Update, context):
+async def handle_admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle admin commands in both private and group chats."""
     await admin_commands.handle_admin_command(update, context)
 
 
-async def post_init(application):
+async def post_init(application: Application) -> None:  # type: ignore[type-arg]
     """Initialize bot after startup - grant ROOT user admin permissions."""
     from .config import config
     from .permissions import Permission, permission_manager
@@ -104,7 +116,10 @@ async def post_init(application):
     logger.info("ROOT user initialization complete")
 
 
-def main():
+def main() -> None:
+    if not BOT_TOKEN:
+        raise ValueError("BOT_TOKEN is not set")
+
     application = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
     # Admin commands - work in both private and group chats
