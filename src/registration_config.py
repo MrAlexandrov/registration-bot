@@ -111,20 +111,19 @@ class RegistrationSurveyConfig:
                 db_formatter=format_username_db,
                 display_formatter=format_username_display,
                 auto_collect=auto_collect_username,
-                editable=False,
-                hidden=True,  # Скрываем username от отображения пользователю
+                hidden=True,
             ),
             SurveyField(
                 field_name="telegram_name",
                 label="Имя в телеге",
                 auto_collect=auto_collect_first_name,
-                editable=False,
+                hidden=True,
             ),
             SurveyField(
                 field_name="telegram_sername",
                 label="Полное имя в телеге",
                 auto_collect=auto_collect_full_name,
-                editable=False,
+                hidden=True,
             ),
             SurveyField(
                 field_name="name",
@@ -220,7 +219,7 @@ class RegistrationSurveyConfig:
 
     def get_editable_fields(self) -> list[SurveyField]:
         """Возвращает список редактируемых полей."""
-        return [field for field in self._fields if field.editable]
+        return [field for field in self._fields if field.editable and not field.hidden]
 
     def get_field_names(self) -> list[str]:
         """Возвращает список имен полей."""
