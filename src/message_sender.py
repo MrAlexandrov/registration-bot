@@ -9,6 +9,7 @@ from typing import Any
 from telegram import Bot
 from telegram.error import Forbidden, NetworkError, RetryAfter, TelegramError
 
+from .message_logger import message_logger
 from .user_storage import user_storage
 
 logger = logging.getLogger(__name__)
@@ -63,8 +64,18 @@ class MessageSender:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                await bot.send_message(chat_id=chat_id, text=text, **kwargs)
+                sent_message = await bot.send_message(chat_id=chat_id, text=text, **kwargs)
                 logger.debug(f"Сообщение успешно отправлено пользователю {chat_id}")
+                
+                # Log outgoing message
+                message_logger.log_outgoing_message(
+                    telegram_id=chat_id,
+                    chat_id=chat_id,
+                    sent_message=sent_message,
+                    message_type="text",
+                    reply_to_message_id=kwargs.get("reply_to_message_id"),
+                )
+                
                 return True
 
             except Forbidden as e:

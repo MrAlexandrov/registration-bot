@@ -52,14 +52,14 @@ class Database:
 
     def create_tables(self):
         """Create all tables defined in models."""
-        from .models import DynamicBase, get_user_model
+        from .models import DynamicBase, Message, get_user_model
 
         # Ensure User model is initialized
         get_user_model()
 
-        # Create all tables
+        # Create all tables (including Message table)
         DynamicBase.metadata.create_all(bind=self.engine)
-        logger.info("Database tables created successfully")
+        logger.info("Database tables created successfully (including messages table)")
 
     def drop_tables(self):
         """Drop all tables (use with caution!)."""

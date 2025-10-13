@@ -5,6 +5,7 @@ from telegram.ext import Application, CallbackQueryHandler, ChatMemberHandler, C
 from .admin_commands import admin_commands
 from .chat_tracker import chat_tracker
 from .error_notifier import error_notifier
+from .message_logger import message_logger
 from .registration_handler import RegistrationFlow
 from .settings import BOT_TOKEN
 from .user_storage import user_storage
@@ -32,6 +33,9 @@ async def start(update, context):
 
 async def handle_message(update, context):
     """Обрабатывает сообщения пользователя."""
+    # Log incoming message
+    message_logger.log_incoming_message(update)
+    
     await registration_flow.handle_input(update, context)
 
 
@@ -122,6 +126,17 @@ def main():
     # Message handlers - only in private chats for registration
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.ChatType.PRIVATE, handle_message))
     application.add_handler(MessageHandler(filters.CONTACT & filters.ChatType.PRIVATE, handle_message))
+    
+    # Media message handlers - log all media types
+    application.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.Document.ALL & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.VIDEO & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.AUDIO & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.VOICE & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.Sticker.ALL & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.LOCATION & filters.ChatType.PRIVATE, handle_message))
+    application.add_handler(MessageHandler(filters.POLL & filters.ChatType.PRIVATE, handle_message))
+    
     application.add_handler(CallbackQueryHandler(registration_flow.handle_inline_query))
 
     # Track when users block/unblock the bot

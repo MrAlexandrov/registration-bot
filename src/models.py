@@ -7,13 +7,54 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, Index, Integer, String, Text, BigInteger
 from sqlalchemy.orm import declarative_base
 
 logger = logging.getLogger(__name__)
 
 # Create a separate base for dynamic model creation
 DynamicBase = declarative_base()
+
+
+class Message(DynamicBase):
+    """
+    Model for storing all messages exchanged between users and the bot.
+    Tracks both incoming messages from users and outgoing messages from the bot.
+    """
+
+    __tablename__ = "messages"
+    __table_args__ = (
+        Index("idx_message_telegram_id", "telegram_id"),
+        Index("idx_message_chat_id", "chat_id"),
+        Index("idx_message_direction", "direction"),
+        Index("idx_message_created_at", "created_at"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_id = Column(BigInteger, nullable=False, index=True)  # User's Telegram ID
+    chat_id = Column(BigInteger, nullable=False, index=True)  # Chat ID (usually same as telegram_id for private chats)
+    message_id = Column(BigInteger, nullable=True)  # Telegram message ID
+    direction = Column(String(10), nullable=False)  # 'incoming' or 'outgoing'
+    message_type = Column(String(50), nullable=True)  # 'text', 'photo', 'document', 'contact', etc.
+    text = Column(Text, nullable=True)  # Message text content
+    caption = Column(Text, nullable=True)  # Caption for media messages
+    file_id = Column(String(255), nullable=True)  # Telegram file_id for media
+    reply_to_message_id = Column(BigInteger, nullable=True)  # ID of message being replied to
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    def __repr__(self) -> str:
+        return f"<Message(id={self.id}, telegram_id={self.telegram_id}, direction='{self.direction}', type='{self.message_type}')>"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert message object to dictionary."""
+        result = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            if isinstance(value, datetime):
+                result[column.name] = value.isoformat()
+            else:
+                result[column.name] = value
+        return result
 
 
 def create_user_model(survey_config):
