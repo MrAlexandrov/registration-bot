@@ -1,5 +1,6 @@
 import logging
 
+from telegram import Update
 from telegram.ext import Application, CallbackQueryHandler, ChatMemberHandler, CommandHandler, MessageHandler, filters
 
 from .admin_commands import admin_commands
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 registration_flow = RegistrationFlow(user_storage)
 
 
-async def error_handler(update, context):
+async def error_handler(update: Update, context):
     """Log Errors caused by Updates and notify superuser chat."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
@@ -26,12 +27,12 @@ async def error_handler(update, context):
     await error_notifier.notify_error(context, context.error, update)
 
 
-async def start(update, context):
+async def start(update: Update, context):
     """Обрабатывает команду /start."""
     await registration_flow.handle_command(update, context)
 
 
-async def handle_message(update, context):
+async def handle_message(update: Update, context):
     """Обрабатывает сообщения пользователя."""
     # Log incoming message
     message_logger.log_incoming_message(update)
@@ -39,7 +40,7 @@ async def handle_message(update, context):
     await registration_flow.handle_input(update, context)
 
 
-async def track_chat_member_updates(update, context):
+async def track_chat_member_updates(update: Update, context):
     """
     Отслеживает изменения статуса бота в чате с пользователем.
     Срабатывает когда пользователь блокирует или разблокирует бота.
@@ -77,7 +78,7 @@ async def track_chat_member_updates(update, context):
         user_storage.update_user(user_id, "is_blocked", 0)
 
 
-async def handle_admin_command(update, context):
+async def handle_admin_command(update: Update, context):
     """Handle admin commands in both private and group chats."""
     await admin_commands.handle_admin_command(update, context)
 

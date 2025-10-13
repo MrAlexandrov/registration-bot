@@ -7,8 +7,11 @@ from telegram import (
     KeyboardButton,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
+    Update,
 )
 from telegram.constants import ParseMode
+
+from src.user_storage import UserStorage
 
 from .constants import (
     AUTO_COLLECT,
@@ -32,13 +35,13 @@ logger = logging.getLogger(__name__)
 
 
 class StateHandler:
-    def __init__(self, user_storage):
+    def __init__(self, user_storage: UserStorage):
         self.user_storage = user_storage
         self.steps = [field.field_name for field in SURVEY_CONFIG.fields]
         self.states_config = {state[STATE]: state for state in SURVEY_CONFIG.post_registration_states}
         self.admin_states_config = {state[STATE]: state for state in SURVEY_CONFIG.admin_states}
 
-    async def transition_state(self, update, context, state):
+    async def transition_state(self, update: Update, context, state):
         if update.callback_query:
             user_id = update.callback_query.from_user.id
         else:

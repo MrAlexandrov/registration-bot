@@ -1,5 +1,6 @@
 import logging
 
+from telegram import Update
 from telegram.constants import ParseMode
 
 from .constants import (
@@ -18,19 +19,19 @@ from .message_formatter import MessageFormatter
 from .message_sender import message_sender
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
-from .user_storage import user_storage
+from .user_storage import UserStorage, user_storage
 from .utils import get_actual_table
 
 logger = logging.getLogger(__name__)
 
 
 class RegistrationFlow:
-    def __init__(self, user_storage):
+    def __init__(self, user_storage: UserStorage):
         self.user_storage = user_storage
         self.state_handler = StateHandler(user_storage)
         self.steps = [field.field_name for field in SURVEY_CONFIG.fields]
 
-    async def handle_command(self, update, context):
+    async def handle_command(self, update: Update, context):
         """Обрабатывает команды, такие как /start."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
@@ -49,7 +50,7 @@ class RegistrationFlow:
 
             await self.state_handler.transition_state(update, context, user[STATE])
 
-    async def handle_input(self, update, context):
+    async def handle_input(self, update: Update, context):
         """Обрабатывает пользовательский ввод для всех состояний."""
         user_id = update.message.from_user.id
         user = self.user_storage.get_user(user_id)
@@ -97,7 +98,7 @@ class RegistrationFlow:
 
         await self.process_data_input(update, context, state, user_input)
 
-    async def handle_admin_input(self, update, context, state):
+    async def handle_admin_input(self, update: Update, context, state):
         user_id = update.message.from_user.id
         if state == ADMIN_SEND_MESSAGE:
             user_input = MessageFormatter.get_escaped_text(update.message)
@@ -125,7 +126,7 @@ class RegistrationFlow:
             return True
         return False
 
-    async def process_action_input(self, update, context, state, user_input):
+    async def process_action_input(self, update: Update, context, state, user_input):
         """Обрабатывает кнопки в состояниях registered и edit."""
         user_id = update.message.from_user.id
 
@@ -174,7 +175,7 @@ class RegistrationFlow:
             return field_config.db_formatter(value)
         return value
 
-    async def process_data_input(self, update, context, state, user_input):
+    async def process_data_input(self, update: Update, context, state, user_input):
         """Обрабатывает пользовательский ввод, проверяет и форматирует перед сохранением."""
         user_id = update.effective_user.id
         actual_state = state.replace("edit_", "")
@@ -214,7 +215,7 @@ class RegistrationFlow:
         if update.callback_query:
             await update.callback_query.edit_message_reply_markup(reply_markup=None)
 
-    async def handle_inline_query(self, update, context):
+    async def handle_inline_query(self, update: Update, context):
         """Обрабатывает нажатия на инлайн-кнопки."""
         query = update.callback_query
         await query.answer()

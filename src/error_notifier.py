@@ -22,7 +22,11 @@ class ErrorNotifier:
         self.permission_manager = permission_manager
 
     async def notify_error(
-        self, context: ContextTypes.DEFAULT_TYPE, error: Exception, update: Update = None, additional_info: str = None
+        self,
+        context: ContextTypes.DEFAULT_TYPE,
+        error: Exception,
+        update: Update | None = None,
+        additional_info: str | None = None,
     ):
         """
         Send error notification to superuser chat.
@@ -51,7 +55,9 @@ class ErrorNotifier:
         except Exception as e:
             logger.error(f"Failed to send error notification: {e}")
 
-    def _format_error_message(self, error: Exception, update: Update = None, additional_info: str = None) -> str:
+    def _format_error_message(
+        self, error: Exception, update: Update | None = None, additional_info: str | None = None
+    ) -> str:
         """
         Format error message for notification.
 

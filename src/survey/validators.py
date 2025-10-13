@@ -103,7 +103,7 @@ class ValidatorFactory:
     """Фабрика для создания валидаторов."""
 
     @staticmethod
-    def create_non_empty(error_message: str = None) -> NonEmptyValidator:
+    def create_non_empty(error_message: str | None = None) -> NonEmptyValidator:
         if error_message:
             return NonEmptyValidator(error_message)
         return NonEmptyValidator()
@@ -121,7 +121,7 @@ class ValidatorFactory:
         return DateValidator()
 
     @staticmethod
-    def create_options(options: list[str], error_message: str = None) -> OptionsValidator:
+    def create_options(options: list[str], error_message: str | None = None) -> OptionsValidator:
         if error_message:
             return OptionsValidator(options, error_message)
         return OptionsValidator(options)
