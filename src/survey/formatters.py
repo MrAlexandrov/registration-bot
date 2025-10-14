@@ -11,7 +11,7 @@ class Formatter(ABC):
     """Базовый класс для всех форматтеров."""
 
     @abstractmethod
-    def format(self, value: str) -> str:
+    def format(self, value: str) -> str | None:
         """Форматирует значение."""
         pass
 
@@ -70,7 +70,7 @@ class DateDbFormatter(Formatter):
 class UsernameDbFormatter(Formatter):
     """Форматтер username для сохранения в БД."""
 
-    def format(self, value: str) -> str:
+    def format(self, value: str) -> str | None:
         return value.strip() if value else None
 
 
@@ -140,7 +140,7 @@ def format_date_db(value: str) -> str:
     return FormatterFactory.create_date_db().format(value)
 
 
-def format_username_db(value: str) -> str:
+def format_username_db(value: str) -> str | None:
     return FormatterFactory.create_username_db().format(value)
 
 
