@@ -72,9 +72,18 @@ class DateValidator(Validator):
         self.error_message = error_message
 
     def validate(self, value: str) -> tuple[bool, str | None]:
-        pattern = r"^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(19|20)\d{2}$"
-        if not re.match(pattern, value):
+        pattern = r"^(0?[1-9]|[12][0-9]|3[01])\.(0?[1-9]|1[0-2])\.(\d{4})$"
+        match = re.match(pattern, value)
+        if not match:
             return False, self.error_message
+
+        year = int(match.group(3))
+        if year < 1980 or year > 2009:
+            return (
+                False,
+                "Немного не верится, что ты родился в этом году. Но могу ошибаться, если так, введи, пожалуйста, 2000 год, потом разберёмся.",
+            )
+
         return True, None
 
 
