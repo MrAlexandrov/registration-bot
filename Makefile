@@ -43,6 +43,9 @@ restart:
 	docker-compose up -d
 	docker-compose logs -f
 
+logs:
+	docker-compose logs -f
+
 docker-clean:
 	docker-compose down --rmi all --volumes --remove-orphans
 	docker system prune -f
