@@ -30,6 +30,7 @@ class AdminCommands:
         /list_permissions <user_id> - List user's permissions
         /list_users <permission> - List users with specific permission
         /register_staff_chat - Register current chat as staff chat
+        /register_counselor_chat - Register current chat as counselor chat
         /register_superuser_chat - Register current chat as superuser chat
         /my_permissions - Show your own permissions
         """
@@ -54,6 +55,7 @@ class AdminCommands:
             "/list_permissions": self._list_permissions,
             "/list_users": self._list_users,
             "/register_staff_chat": self._register_staff_chat,
+            "/register_counselor_chat": self._register_counselor_chat,
             "/register_superuser_chat": self._register_superuser_chat,
             "/my_permissions": self._my_permissions,
         }
@@ -240,6 +242,27 @@ class AdminCommands:
             "Все участники этого чата автоматически получат статус staff"
         )
 
+    async def _register_counselor_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Register current chat as counselor chat."""
+        user_id = update.effective_user.id
+
+        # Only root can register chats
+        if not self.permission_manager.is_root(user_id):
+            await update.message.reply_text("❌ Только ROOT может регистрировать чаты")
+            return
+
+        chat = update.effective_chat
+        if chat.type == "private":
+            await update.message.reply_text("❌ Эта команда работает только в групповых чатах")
+            return
+
+        self.permission_manager.register_chat(chat.id, "counselor", chat.title)
+
+        await update.message.reply_text(
+            f"✅ Чат '{chat.title}' зарегистрирован как чат вожатых\n\n"
+            "Все участники этого чата автоматически получат статус is_counselor=1"
+        )
+
     async def _register_superuser_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Register current chat as superuser chat."""
         user_id = update.effective_user.id
@@ -294,6 +317,7 @@ class AdminCommands:
 
 💬 Управление чатами (только ROOT):
 /register_staff_chat - Зарегистрировать чат организаторов
+/register_counselor_chat - Зарегистрировать чат вожатых
 /register_superuser_chat - Зарегистрировать чат суперпользователей
 
 📋 Доступные права:

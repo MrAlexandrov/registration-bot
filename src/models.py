@@ -73,12 +73,16 @@ def create_user_model(survey_config):
         "__table_args__": (
             Index("idx_user_telegram_id", "telegram_id"),
             Index("idx_user_state", "state"),
+            Index("idx_user_is_staff", "is_staff"),
+            Index("idx_user_is_counselor", "is_counselor"),
         ),
         # Base fields
         "id": Column(Integer, primary_key=True, autoincrement=True),
         "telegram_id": Column(Integer, unique=True, nullable=False, index=True),
         "state": Column(String, nullable=False),
         "is_blocked": Column(Integer, default=0, nullable=False),  # 0 = не заблокирован, 1 = заблокирован
+        "is_staff": Column(Integer, default=0, nullable=False),  # 0 = не организатор, 1 = организатор
+        "is_counselor": Column(Integer, default=0, nullable=False),  # 0 = не вожатый, 1 = вожатый
         "created_at": Column(DateTime, default=lambda: datetime.now(UTC), nullable=False),
         "updated_at": Column(
             DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False
