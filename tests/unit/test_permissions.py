@@ -10,20 +10,16 @@ from src.permissions import Permission, PermissionManager
 
 @pytest.fixture
 def test_db():
-    """Create a test database."""
-    db = Database("data/test_permissions.db")
+    """Create an in-memory test database to avoid file permission issues."""
+    db = Database(":memory:")
     yield db
-    # Cleanup
-    import os
-
-    if os.path.exists("data/test_permissions.db"):
-        os.remove("data/test_permissions.db")
+    # No cleanup needed for in-memory database
 
 
 @pytest.fixture
 def permission_manager(test_db):
     """Create a permission manager with test database."""
-    return PermissionManager()
+    return PermissionManager(test_db)
 
 
 def test_root_user(permission_manager, monkeypatch):

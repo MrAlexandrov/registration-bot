@@ -22,13 +22,14 @@ class Database:
         Initialize database connection.
 
         Args:
-            db_path: Path to SQLite database file
+            db_path: Path to SQLite database file or ":memory:" for in-memory database
         """
-        # Create data directory if it doesn't exist
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        # Create data directory if it doesn't exist (but not for in-memory database)
+        if db_path != ":memory:":
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
         self.db_path = db_path
-        self.db_url = f"sqlite:///{db_path}"
+        self.db_url = f"sqlite:///{db_path}" if db_path != ":memory:" else "sqlite://"
 
         # Create engine with appropriate settings for SQLite
         self.engine = create_engine(

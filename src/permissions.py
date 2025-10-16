@@ -64,14 +64,19 @@ class BotChat(PermissionBase):
 class PermissionManager:
     """Manages user permissions and role-based access control."""
 
-    def __init__(self) -> None:
-        """Initialize permission manager and create tables."""
+    def __init__(self, database=None) -> None:
+        """Initialize permission manager and create tables.
+
+        Args:
+            database: Database instance to use. If None, uses the global db instance.
+        """
+        self.db = database or db
         self._create_tables()
 
     def _create_tables(self) -> None:
         """Create permission tables in the database."""
         try:
-            PermissionBase.metadata.create_all(bind=db.engine)
+            PermissionBase.metadata.create_all(bind=self.db.engine)
             logger.info("Permission tables created successfully")
         except Exception as e:
             logger.error(f"Error creating permission tables: {e}")
@@ -106,7 +111,7 @@ class PermissionManager:
             return True
 
         # Check database for permission
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             perm = session.query(UserPermission).filter_by(telegram_id=user_id, permission=permission.value).first()
             return perm is not None
 
@@ -123,7 +128,7 @@ class PermissionManager:
             True if permission was granted, False if already exists
         """
 
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             # Check if permission already exists
             existing = session.query(UserPermission).filter_by(telegram_id=user_id, permission=permission.value).first()
 
@@ -151,7 +156,7 @@ class PermissionManager:
         Returns:
             True if permission was revoked, False if not found
         """
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             perm = session.query(UserPermission).filter_by(telegram_id=user_id, permission=permission.value).first()
 
             if not perm:
@@ -177,7 +182,7 @@ class PermissionManager:
         if self.is_root(user_id):
             return {perm.value for perm in Permission}
 
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             perms = session.query(UserPermission).filter_by(telegram_id=user_id).all()
             return {perm.permission for perm in perms}
 
@@ -191,7 +196,7 @@ class PermissionManager:
         Returns:
             List of telegram user IDs
         """
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             perms = session.query(UserPermission).filter_by(permission=permission.value).all()
             user_ids = [perm.telegram_id for perm in perms]
 
@@ -214,7 +219,7 @@ class PermissionManager:
             True if chat was registered, False if already exists
         """
 
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             # Check if chat already exists
             existing = session.query(BotChat).filter_by(chat_id=chat_id).first()
 
@@ -251,7 +256,7 @@ class PermissionManager:
         Returns:
             Chat ID or None if not found
         """
-        with db.get_session() as session:
+        with self.db.get_session() as session:
             chat = session.query(BotChat).filter_by(chat_type=chat_type, is_active=True).first()
             return chat.chat_id if chat else None
 
