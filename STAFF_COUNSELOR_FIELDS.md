@@ -32,6 +32,7 @@ To designate a chat as the staff chat:
 1. Add the bot to your staff group chat
 2. Make sure you are the ROOT user (configured in `.env`)
 3. Send the command: `/register_staff_chat`
+4. **Important**: Send `/sync_staff_chat` to mark all existing members
 
 The bot will confirm registration and automatically track all members of this chat.
 
@@ -42,8 +43,22 @@ To designate a chat as the counselor chat:
 1. Add the bot to your counselor group chat
 2. Make sure you are the ROOT user (configured in `.env`)
 3. Send the command: `/register_counselor_chat`
+4. **Important**: Send `/sync_counselor_chat` to mark all existing members
 
 The bot will confirm registration and automatically track all members of this chat.
+
+### 3. Sync Existing Members
+
+⚠️ **Important**: When you first register a chat, the bot only tracks NEW events (users joining/leaving). To mark existing members, you MUST run the sync command:
+
+- For staff chat: `/sync_staff_chat`
+- For counselor chat: `/sync_counselor_chat`
+
+These commands will:
+- Check all users in your database
+- Verify if they are members of the registered chat
+- Update their `is_staff` or `is_counselor` status accordingly
+- Show you how many users were synced
 
 ## Automatic Updates
 
@@ -94,6 +109,8 @@ The migration script will:
 - `/register_staff_chat` - Register current chat as staff chat
 - `/register_counselor_chat` - Register current chat as counselor chat
 - `/register_superuser_chat` - Register current chat for error notifications
+- `/sync_staff_chat` - Sync all existing staff chat members (mark existing users)
+- `/sync_counselor_chat` - Sync all existing counselor chat members (mark existing users)
 
 ### Permission Management
 
@@ -167,10 +184,21 @@ with db.get_session() as session:
 
 ### Users not being tracked
 
+**Problem**: You registered a chat but existing members are not marked as staff/counselors.
+
+**Solution**: Run the sync command!
+- `/sync_staff_chat` for staff chat
+- `/sync_counselor_chat` for counselor chat
+
+The bot only tracks NEW events by default. The sync command checks all existing users.
+
+### Other issues
+
 1. **Check bot permissions**: The bot must be an administrator in the chat
 2. **Verify chat registration**: Use `/my_permissions` to check if you're ROOT
 3. **Check logs**: Look for chat member update events in the bot logs
 4. **Verify user exists**: Users must be registered in the bot before their status can be updated
+5. **Run sync after registration**: Always run sync commands after registering a new chat
 
 ### Migration issues
 
