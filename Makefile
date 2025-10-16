@@ -27,7 +27,7 @@ lint:
 	poetry run ruff check src tests
 
 format:
-	poetry run ruff check --fix src tests
+	poetry run ruff check --fix --unsafe-fixes src tests
 	poetry run ruff format src tests
 
 dump:
