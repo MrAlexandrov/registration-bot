@@ -45,7 +45,7 @@ class RegistrationFlow:
             await message_sender.send_message(
                 context.bot,
                 user_id,
-                "Привет, я - бот для регистрации на Пионерский выезд 2025!",
+                "❤️‍🔥 Привет! Мы рады, что ты решил зарегистрироваться на Пионерский выезд 2025!",
             )
             await self.state_handler.transition_state(update, context, self.steps[0])
         else:

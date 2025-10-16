@@ -123,7 +123,9 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="name",
                 label="ФИО",
-                message="Напиши, пожалуйста, ФИО (в формате Иванов Иван Иванович)",
+                message="""Давай познакомимся? Для этого заполни мою анкету дружбы!
+‼️ Напиши своё ФИО!
+Например: Иванов Иван Иванович""",
                 validator=validate_non_empty,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
@@ -132,7 +134,8 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="birth_date",
                 label="Дата рождения",
-                message="Когда у тебя день рождения?",
+                message="""🗓️ Теперь, свою дату рождения!
+Например: 07.07.2007""",
                 validator=validate_date,
                 db_formatter=format_date_db,
                 display_formatter=format_default_display,
@@ -141,7 +144,8 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="group",
                 label="Группа",
-                message="Из какой ты группы?",
+                message="""🎓 Напиши свою учебную группу!
+Например: РК6-56Б""",
                 validator=validate_group,
                 db_formatter=format_group_db,
                 display_formatter=format_default_display,
@@ -150,7 +154,8 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="phone",
                 label="Номер телефона",
-                message="Введи свой номер телефона (или поделись через телеграмм)",
+                message="""📞 Введи свой номер телефона или поделись через телеграмм!
+Например: +7 8888888888""",
                 validator=validate_phone,
                 db_formatter=format_phone_db,
                 display_formatter=format_phone_display,
@@ -160,7 +165,7 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="expectations",
                 label="Ожидания",
-                message="Какие у тебя ожидания от выезда?",
+                message="""🫶🏻 Расскажи свои ожидания от выезда!""",
                 validator=validate_non_empty,
                 editable=True,
             ),
@@ -189,7 +194,7 @@ class RegistrationSurveyConfig:
 
     def _generate_registered_message(self, user_data: dict[str, Any]) -> str:
         """Генерирует сообщение с данными пользователя после регистрации."""
-        message = "Отлично! Вот, что я запомнил, проверь, пожалуйста, что всё верно:\n"
+        message = """❤️ Отлично! Всё заполнено, проверь нашу анкету дружбы, чтобы не было ошибок!"""
 
         for field in self._fields:
             # Пропускаем скрытые поля
