@@ -172,6 +172,7 @@ class TestRegistrationSurveyConfig:
         user_data = {
             "username": "@testuser",
             "telegram_sername": "Иван Иванов",
+            "name": "Петров Петр Петрович",
         }
 
         # Генерируем сообщение
@@ -181,9 +182,13 @@ class TestRegistrationSurveyConfig:
         assert "Никнейм" not in message
         assert "@testuser" not in message
 
+        # Проверяем что telegram_sername (скрытое поле) не отображается
+        assert "Полное имя в телеге" not in message
+        assert "Иван Иванов" not in message
+
         # Проверяем что name (видимое поле) отображается
-        assert "Имя" in message
-        assert "Иван Иванов" in message
+        assert "ФИО" in message
+        assert "Петров Петр Петрович" in message
 
 
 class TestGlobalConfig:

@@ -3,7 +3,7 @@ Message logger for tracking all messages exchanged between users and the bot.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from telegram import Message as TelegramMessage
 from telegram import Update
@@ -78,7 +78,7 @@ class MessageLogger:
                     caption=caption,
                     file_id=file_id,
                     reply_to_message_id=message.reply_to_message.message_id if message.reply_to_message else None,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
 
                 session.add(msg_record)
@@ -152,7 +152,7 @@ class MessageLogger:
                     caption=caption,
                     file_id=file_id,
                     reply_to_message_id=reply_to_message_id,
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
 
                 session.add(msg_record)

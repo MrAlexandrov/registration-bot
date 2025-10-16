@@ -2,7 +2,7 @@
 Unit tests for message logger functionality.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -91,7 +91,7 @@ class TestMessageModel:
             direction="incoming",
             message_type="text",
             text="Test message",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         assert msg.telegram_id == 12345
@@ -110,7 +110,7 @@ class TestMessageModel:
             direction="outgoing",
             message_type="text",
             text="Bot response",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
 
         repr_str = repr(msg)
@@ -121,7 +121,7 @@ class TestMessageModel:
 
     def test_message_model_to_dict(self):
         """Test Message to_dict method."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         msg = Message(
             telegram_id=12345,
             chat_id=12345,

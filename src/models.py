@@ -4,7 +4,7 @@ Models are created dynamically based on SURVEY_CONFIG.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import BigInteger, Column, DateTime, Index, Integer, String, Text
@@ -40,7 +40,7 @@ class Message(DynamicBase):
     caption = Column(Text, nullable=True)  # Caption for media messages
     file_id = Column(String(255), nullable=True)  # Telegram file_id for media
     reply_to_message_id = Column(BigInteger, nullable=True)  # ID of message being replied to
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     def __repr__(self) -> str:
         return f"<Message(id={self.id}, telegram_id={self.telegram_id}, direction='{self.direction}', type='{self.message_type}')>"
@@ -79,8 +79,10 @@ def create_user_model(survey_config):
         "telegram_id": Column(Integer, unique=True, nullable=False, index=True),
         "state": Column(String, nullable=False),
         "is_blocked": Column(Integer, default=0, nullable=False),  # 0 = не заблокирован, 1 = заблокирован
-        "created_at": Column(DateTime, default=datetime.utcnow, nullable=False),
-        "updated_at": Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False),
+        "created_at": Column(DateTime, default=lambda: datetime.now(UTC), nullable=False),
+        "updated_at": Column(
+            DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False
+        ),
     }
 
     # Add dynamic fields from survey config
@@ -127,7 +129,7 @@ def create_user_model(survey_config):
         for key, value in data.items():
             if key in valid_keys and key not in ["id", "created_at"]:
                 setattr(self, key, value)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
     attrs["__repr__"] = __repr__
     attrs["to_dict"] = to_dict

@@ -4,6 +4,7 @@ Handles role-based access control and permission checks.
 """
 
 import logging
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import BigInteger, Boolean, Column, DateTime, Index, Integer, String
@@ -121,7 +122,6 @@ class PermissionManager:
         Returns:
             True if permission was granted, False if already exists
         """
-        from datetime import datetime
 
         with db.get_session() as session:
             # Check if permission already exists
@@ -133,7 +133,7 @@ class PermissionManager:
 
             # Create new permission
             new_perm = UserPermission(
-                telegram_id=user_id, permission=permission.value, granted_by=granted_by, created_at=datetime.utcnow()
+                telegram_id=user_id, permission=permission.value, granted_by=granted_by, created_at=datetime.now(UTC)
             )
             session.add(new_perm)
             session.commit()
@@ -213,7 +213,6 @@ class PermissionManager:
         Returns:
             True if chat was registered, False if already exists
         """
-        from datetime import datetime
 
         with db.get_session() as session:
             # Check if chat already exists
@@ -235,7 +234,7 @@ class PermissionManager:
                 chat_type=chat_type,
                 chat_title=chat_title,
                 is_active=True,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
             session.add(new_chat)
             session.commit()
