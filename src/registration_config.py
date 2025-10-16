@@ -194,7 +194,7 @@ class RegistrationSurveyConfig:
 
     def _generate_registered_message(self, user_data: dict[str, Any]) -> str:
         """Генерирует сообщение с данными пользователя после регистрации."""
-        message = """❤️ Отлично! Всё заполнено, проверь нашу анкету дружбы, чтобы не было ошибок!"""
+        message = """❤️ Отлично! Всё заполнено, проверь нашу анкету дружбы, чтобы не было ошибок!\n"""
 
         for field in self._fields:
             # Пропускаем скрытые поля
