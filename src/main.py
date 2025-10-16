@@ -129,7 +129,10 @@ def main() -> None:
         "list_permissions",
         "list_users",
         "register_staff_chat",
+        "register_counselor_chat",
         "register_superuser_chat",
+        "sync_staff_chat",
+        "sync_counselor_chat",
         "my_permissions",
         "help",
     ]

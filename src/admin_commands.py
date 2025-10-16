@@ -8,6 +8,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .chat_tracker import chat_tracker
 from .permissions import Permission, permission_manager
 from .user_storage import user_storage
 
@@ -19,6 +20,7 @@ class AdminCommands:
 
     def __init__(self):
         self.permission_manager = permission_manager
+        self.chat_tracker = chat_tracker
 
     async def handle_admin_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -32,6 +34,8 @@ class AdminCommands:
         /register_staff_chat - Register current chat as staff chat
         /register_counselor_chat - Register current chat as counselor chat
         /register_superuser_chat - Register current chat as superuser chat
+        /sync_staff_chat - Sync all staff chat members
+        /sync_counselor_chat - Sync all counselor chat members
         /my_permissions - Show your own permissions
         """
         user_id = update.effective_user.id
@@ -57,6 +61,8 @@ class AdminCommands:
             "/register_staff_chat": self._register_staff_chat,
             "/register_counselor_chat": self._register_counselor_chat,
             "/register_superuser_chat": self._register_superuser_chat,
+            "/sync_staff_chat": self._sync_staff_chat,
+            "/sync_counselor_chat": self._sync_counselor_chat,
             "/my_permissions": self._my_permissions,
         }
 
@@ -239,7 +245,8 @@ class AdminCommands:
 
         await update.message.reply_text(
             f"✅ Чат '{chat.title}' зарегистрирован как чат организаторов\n\n"
-            "Все участники этого чата автоматически получат статус staff"
+            "Все участники этого чата автоматически получат статус staff.\n\n"
+            "⚠️ Для синхронизации существующих участников используйте команду /sync_staff_chat"
         )
 
     async def _register_counselor_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -260,7 +267,8 @@ class AdminCommands:
 
         await update.message.reply_text(
             f"✅ Чат '{chat.title}' зарегистрирован как чат вожатых\n\n"
-            "Все участники этого чата автоматически получат статус is_counselor=1"
+            "Все участники этого чата автоматически получат статус is_counselor=1.\n\n"
+            "⚠️ Для синхронизации существующих участников используйте команду /sync_counselor_chat"
         )
 
     async def _register_superuser_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -283,6 +291,71 @@ class AdminCommands:
             f"✅ Чат '{chat.title}' зарегистрирован как чат суперпользователей\n\n"
             "В этот чат будут отправляться уведомления об ошибках"
         )
+
+    async def _sync_staff_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Sync all members of staff chat with is_staff field."""
+        user_id = update.effective_user.id
+
+        # Only root can sync chats
+        if not self.permission_manager.is_root(user_id):
+            await update.message.reply_text("❌ Только ROOT может синхронизировать чаты")
+            return
+
+        # Check if staff chat is registered
+        staff_chat_id = self.permission_manager.get_chat_by_type("staff")
+        if not staff_chat_id:
+            await update.message.reply_text(
+                "❌ Чат организаторов не зарегистрирован\n\n" "Используйте /register_staff_chat в нужном чате"
+            )
+            return
+
+        await update.message.reply_text("🔄 Начинаю синхронизацию участников чата организаторов...")
+
+        try:
+            synced_count = await self.chat_tracker.sync_staff_chat_members(context)
+
+            await update.message.reply_text(
+                f"✅ Синхронизация завершена!\n\n"
+                f"Помечено как организаторы: {synced_count} пользователей\n\n"
+                f"Все участники чата организаторов теперь имеют:\n"
+                f"• is_staff = 1\n"
+                f"• Право STAFF"
+            )
+        except Exception as e:
+            logger.error(f"Error syncing staff chat: {e}")
+            await update.message.reply_text(f"❌ Ошибка при синхронизации: {e}")
+
+    async def _sync_counselor_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Sync all members of counselor chat with is_counselor field."""
+        user_id = update.effective_user.id
+
+        # Only root can sync chats
+        if not self.permission_manager.is_root(user_id):
+            await update.message.reply_text("❌ Только ROOT может синхронизировать чаты")
+            return
+
+        # Check if counselor chat is registered
+        counselor_chat_id = self.permission_manager.get_chat_by_type("counselor")
+        if not counselor_chat_id:
+            await update.message.reply_text(
+                "❌ Чат вожатых не зарегистрирован\n\n" "Используйте /register_counselor_chat в нужном чате"
+            )
+            return
+
+        await update.message.reply_text("🔄 Начинаю синхронизацию участников чата вожатых...")
+
+        try:
+            synced_count = await self.chat_tracker.sync_counselor_chat_members(context)
+
+            await update.message.reply_text(
+                f"✅ Синхронизация завершена!\n\n"
+                f"Помечено как вожатые: {synced_count} пользователей\n\n"
+                f"Все участники чата вожатых теперь имеют:\n"
+                f"• is_counselor = 1"
+            )
+        except Exception as e:
+            logger.error(f"Error syncing counselor chat: {e}")
+            await update.message.reply_text(f"❌ Ошибка при синхронизации: {e}")
 
     async def _my_permissions(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show current user's permissions."""
@@ -319,6 +392,8 @@ class AdminCommands:
 /register_staff_chat - Зарегистрировать чат организаторов
 /register_counselor_chat - Зарегистрировать чат вожатых
 /register_superuser_chat - Зарегистрировать чат суперпользователей
+/sync_staff_chat - Синхронизировать участников чата организаторов
+/sync_counselor_chat - Синхронизировать участников чата вожатых
 
 📋 Доступные права:
 • admin - управление пользователями и правами
