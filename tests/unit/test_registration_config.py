@@ -88,7 +88,7 @@ class TestRegistrationSurveyConfig:
         name_field = config.get_field_by_name("name")
         assert name_field is not None
         assert name_field.field_name == "name"
-        assert name_field.label == "Имя"
+        assert name_field.label == "ФИО"
 
         # Несуществующее поле
         nonexistent_field = config.get_field_by_name("nonexistent")
@@ -99,10 +99,10 @@ class TestRegistrationSurveyConfig:
         config = RegistrationSurveyConfig()
 
         # Существующее поле
-        name_field = config.get_field_by_label("Имя")
+        name_field = config.get_field_by_label("ФИО")
         assert name_field is not None
         assert name_field.field_name == "name"
-        assert name_field.label == "Имя"
+        assert name_field.label == "ФИО"
 
         # Несуществующее поле
         nonexistent_field = config.get_field_by_label("Несуществующее поле")
@@ -171,7 +171,7 @@ class TestRegistrationSurveyConfig:
         # Создаем тестовые данные пользователя
         user_data = {
             "username": "@testuser",
-            "name": "Иван Иванов",
+            "telegram_sername": "Иван Иванов",
         }
 
         # Генерируем сообщение

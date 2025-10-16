@@ -93,7 +93,8 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
         "name": "Иван",
         "group": "РК6-81Б",
         "phone": "71234567890",
-        # "birth_date": "10.03.2002",
+        "birth_date": "10.03.2002",
+        "expectations": "The best",
         # "username": "testuser",
         # "email": "test@example.com",
         # "position": "Вожатый",
@@ -167,7 +168,7 @@ async def test_editing_data(registration_flow, mock_user, mock_chat, mock_contex
     assert registration_flow.user_storage.get_user(user_id)["state"] == "edit"
 
     # Выбор редактирования имени
-    mock_update.message = create_mock_message(mock_chat, mock_user, text="Имя")
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="ФИО")
     mock_update.callback_query = None
 
     await registration_flow.handle_input(mock_update, mock_context)
