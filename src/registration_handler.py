@@ -299,8 +299,8 @@ class RegistrationFlow:
         user = self.user_storage.get_user(user_id)
         state = user[STATE] if user else None
 
-        # Handle cancel action first, as it doesn't need field config
-        if action == "cancel":
+        # Handle cancel actions first, as they don't need field config
+        if action == "cancel" or action == "cancel_edit":
             await self.clear_inline_keyboard(update)
             await self.state_handler.transition_state(update, context, REGISTERED)
             return

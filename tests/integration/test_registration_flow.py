@@ -185,6 +185,68 @@ async def test_editing_data(registration_flow, mock_user, mock_chat, mock_contex
 
 
 @pytest.mark.asyncio
+async def test_cancel_edit_via_callback(registration_flow, mock_user, mock_chat, mock_context):
+    """Тест отмены редактирования через callback-кнопку"""
+    user_id = mock_user.id
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "registered")
+    registration_flow.user_storage.update_user(user_id, "name", "Иван")
+
+    # Переход в режим редактирования
+    mock_update = MagicMock(spec=Update)
+    mock_update.effective_user = mock_user
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="Изменить данные")
+    mock_update.callback_query = None
+
+    await registration_flow.handle_input(mock_update, mock_context)
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "edit"
+
+    # Выбор поля для редактирования
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="ФИО")
+    await registration_flow.handle_input(mock_update, mock_context)
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "edit_name"
+
+    # Нажатие кнопки "Отмена" через callback
+    mock_update.callback_query = AsyncMock()
+    mock_update.callback_query.data = "cancel_edit"
+    mock_update.callback_query.from_user = mock_user
+    mock_update.callback_query.message = create_mock_message(mock_chat, mock_user)
+    mock_update.callback_query.edit_message_reply_markup = AsyncMock()
+    mock_update.message = None
+
+    await registration_flow.handle_inline_query(mock_update, mock_context)
+
+    # Проверяем, что вернулись в состояние registered
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "registered"
+    # Проверяем, что имя не изменилось
+    assert registration_flow.user_storage.get_user(user_id)["name"] == "Иван"
+
+
+@pytest.mark.asyncio
+async def test_cancel_edit_text_button(registration_flow, mock_user, mock_chat, mock_context):
+    """Тест отмены редактирования через текстовую кнопку в состоянии edit"""
+    user_id = mock_user.id
+    registration_flow.user_storage.create_user(user_id)
+    registration_flow.user_storage.update_state(user_id, "registered")
+
+    # Переход в режим редактирования
+    mock_update = MagicMock(spec=Update)
+    mock_update.effective_user = mock_user
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="Изменить данные")
+    mock_update.callback_query = None
+
+    await registration_flow.handle_input(mock_update, mock_context)
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "edit"
+
+    # Нажатие кнопки "Отмена" в состоянии edit
+    mock_update.message = create_mock_message(mock_chat, mock_user, text="Отмена")
+    await registration_flow.handle_input(mock_update, mock_context)
+
+    # Проверяем, что вернулись в состояние registered
+    assert registration_flow.user_storage.get_user(user_id)["state"] == "registered"
+
+
+@pytest.mark.asyncio
 async def test_phone_sharing(registration_flow, mock_user, mock_chat, mock_context):
     """Тест кнопки 'Поделиться номером'"""
     user_id = mock_user.id

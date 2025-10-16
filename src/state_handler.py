@@ -112,6 +112,10 @@ class StateHandler:
             selected_options = user_data.get(actual_field_name, "")
             selected_options = selected_options.split(", ") if selected_options else []
             return self.create_inline_keyboard(options, selected_options=selected_options)
+        # Для состояний редактирования без options добавляем кнопку "Отмена"
+        elif state.startswith("edit_"):
+            keyboard = [[InlineKeyboardButton(CANCEL, callback_data="cancel_edit")]]
+            return InlineKeyboardMarkup(keyboard)
         # Для словарей используем ключи (SurveyField не имеет buttons)
         elif isinstance(config, dict) and BUTTONS in config:
             buttons_value = config[BUTTONS]
