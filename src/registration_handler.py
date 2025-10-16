@@ -41,6 +41,12 @@ class RegistrationFlow:
         if not user:
             logger.info(f"Creating new user for user_id: {user_id}")
             self.user_storage.create_user(user_id)
+            # Send greeting message for new users
+            await message_sender.send_message(
+                context.bot,
+                user_id,
+                "Привет, я - бот для регистрации на Пионерский выезд 2025!",
+            )
             await self.state_handler.transition_state(update, context, self.steps[0])
         else:
             logger.info(f"User {user_id} already exists in state '{user[STATE]}'")

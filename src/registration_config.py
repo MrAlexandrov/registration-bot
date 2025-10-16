@@ -123,7 +123,7 @@ class RegistrationSurveyConfig:
             SurveyField(
                 field_name="name",
                 label="ФИО",
-                message="Привет, я - бот для регистрации на Пионерский выезд 2025!\nДавай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
+                message="Напиши, пожалуйста, ФИО (в формате Иванов Иван Иванович)",
                 validator=validate_non_empty,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
