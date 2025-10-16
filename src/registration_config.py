@@ -18,6 +18,7 @@ from .survey.auto_collectors import auto_collect_full_name, auto_collect_usernam
 from .survey.formatters import (
     format_date_db,
     format_default_display,
+    format_group_db,
     format_phone_db,
     format_phone_display,
     format_text_db,
@@ -25,6 +26,7 @@ from .survey.formatters import (
 )
 from .survey.validators import (
     validate_date,
+    validate_group,
     validate_non_empty,
     validate_phone,
 )
@@ -140,8 +142,8 @@ class RegistrationSurveyConfig:
                 field_name="group",
                 label="Группа",
                 message="Из какой ты группы?",
-                validator=validate_non_empty,
-                db_formatter=format_text_db,
+                validator=validate_group,
+                db_formatter=format_group_db,
                 display_formatter=format_default_display,
                 editable=True,
             ),

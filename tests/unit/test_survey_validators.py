@@ -7,6 +7,7 @@ import pytest
 from src.survey.validators import (
     DateValidator,
     EmailValidator,
+    GroupValidator,
     NonEmptyValidator,
     OptionsValidator,
     PhoneValidator,
@@ -14,6 +15,7 @@ from src.survey.validators import (
     YesNoValidator,
     validate_date,
     validate_email,
+    validate_group,
     validate_non_empty,
     validate_phone,
     validate_yes_no,
@@ -152,6 +154,53 @@ class TestYesNoValidator:
         assert error is not None
 
 
+class TestGroupValidator:
+    """Тесты для GroupValidator."""
+
+    @pytest.mark.parametrize(
+        "group",
+        [
+            "М9-11",  # Basic valid group
+            "ИС9-11",  # With faculty code
+            "Э9-11",  # Single letter faculty
+            "МС9-11",  # Two letter faculty
+            "МЦ9-11",  # Different faculty code
+            "М91-11",  # With number
+            "М91с-11",  # With faculty and number
+            "М91с-11а",  # With subgroup
+            "М91с-11ав",  # With full subgroup
+            "ИУ7-41",  # Real example
+            "ФН12-32",  # Another real example
+            "Э5-12",  # Simple case
+        ],
+    )
+    def test_valid_groups(self, group):
+        validator = GroupValidator()
+        is_valid, error = validator.validate(group)
+        assert is_valid is True
+        assert error is None
+
+    @pytest.mark.parametrize(
+        "group",
+        [
+            "",  # Empty string
+            "M9-11",  # Latin instead of Cyrillic
+            "М999-11",  # Too many numbers
+            "М9-01",  # Invalid class number (0 prefix)
+            "М9-100",  # Invalid class number (too many digits)
+            "М9-1",  # Missing second digit
+            "ММММММ-11",  # Too many letters
+            "М9-11аа",  # Invalid subgroup
+            "М9-11авв",  # Too long subgroup
+        ],
+    )
+    def test_invalid_groups(self, group):
+        validator = GroupValidator()
+        is_valid, error = validator.validate(group)
+        assert is_valid is False
+        assert error is not None
+
+
 class TestValidatorFactory:
     """Тесты для ValidatorFactory."""
 
@@ -170,6 +219,10 @@ class TestValidatorFactory:
     def test_create_date(self):
         validator = ValidatorFactory.create_date()
         assert isinstance(validator, DateValidator)
+
+    def test_create_group(self):
+        validator = ValidatorFactory.create_group()
+        assert isinstance(validator, GroupValidator)
 
     def test_create_options(self):
         options = ["A", "B", "C"]
@@ -209,3 +262,12 @@ class TestCompatibilityFunctions:
         is_valid, error = validate_yes_no("Да")
         assert is_valid is True
         assert error is None
+
+    def test_validate_group(self):
+        is_valid, error = validate_group("М9-11")
+        assert is_valid is True
+        assert error is None
+
+        is_valid, error = validate_group("Invalid")
+        assert is_valid is False
+        assert error is not None

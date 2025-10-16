@@ -8,6 +8,7 @@ from src.survey.validators import (
     create_options_validator,
     validate_date,
     validate_email,
+    validate_group,
     validate_non_empty,
     validate_phone,
     validate_yes_no,
@@ -107,3 +108,34 @@ def test_create_options_validator():
     # Невалидная опция
     valid, _ = validator("НесуществующийВариант")
     assert valid is False
+
+
+@pytest.mark.parametrize(
+    "group, is_valid",
+    [
+        ("М9-11", True),
+        ("ИС9-11", True),
+        ("Э9-11", True),
+        ("МС9-11", True),
+        ("МЦ9-11", True),
+        ("М91-11", True),
+        ("М91с-11", True),
+        ("М91с-11а", True),
+        ("М91с-11ав", True),
+        ("ИУ7-41", True),
+        ("ФН12-32", True),
+        ("Э5-12", True),
+        ("", False),
+        ("M9-11", False),
+        ("М999-11", False),
+        ("М9-01", False),
+        ("М9-100", False),
+        ("М9-1", False),
+        ("ММММММ-11", False),
+        ("М9-11аа", False),
+        ("М9-11авв", False),
+    ],
+)
+def test_validate_group(group, is_valid):
+    valid, _ = validate_group(group)
+    assert valid == is_valid

@@ -90,6 +90,13 @@ class DefaultDisplayFormatter(Formatter):
         return value if value else "Не указано"
 
 
+class GroupDbFormatter(Formatter):
+    """Форматтер группы для сохранения в БД (в верхнем регистре)."""
+
+    def format(self, value: str) -> str:
+        return value.upper().strip() if value else ""
+
+
 # Фабрика форматтеров
 class FormatterFactory:
     """Фабрика для создания форматтеров."""
@@ -122,6 +129,10 @@ class FormatterFactory:
     def create_default_display() -> DefaultDisplayFormatter:
         return DefaultDisplayFormatter()
 
+    @staticmethod
+    def create_group_db() -> GroupDbFormatter:
+        return GroupDbFormatter()
+
 
 # Функции-обертки для обратной совместимости
 def format_text_db(value: str) -> str:
@@ -150,3 +161,7 @@ def format_username_display(value: str) -> str:
 
 def format_default_display(value: str) -> str:
     return FormatterFactory.create_default_display().format(value)
+
+
+def format_group_db(value: str) -> str:
+    return FormatterFactory.create_group_db().format(value)

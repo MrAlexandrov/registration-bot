@@ -65,6 +65,19 @@ class EmailValidator(Validator):
         return True, None
 
 
+class GroupValidator(Validator):
+    """Валидатор для групп."""
+
+    def __init__(self, error_message: str = "Неверный формат группы. Пожалуйста, введите корректную группу."):
+        self.error_message = error_message
+        self.pattern = r"^[а-яА-Я]{1,5}\d{0,2}[сицСИЦ]?-([1-9]|1[0-6])[1-9]([абмтАБМТ]?[вВ]?)$"
+
+    def validate(self, value: str) -> tuple[bool, str | None]:
+        if not re.match(self.pattern, value):
+            return False, self.error_message
+        return True, None
+
+
 class DateValidator(Validator):
     """Валидатор для дат в формате ДД.ММ.ГГГГ."""
 
@@ -136,6 +149,12 @@ class ValidatorFactory:
         return OptionsValidator(options)
 
     @staticmethod
+    def create_group(error_message: str | None = None) -> GroupValidator:
+        if error_message:
+            return GroupValidator(error_message)
+        return GroupValidator()
+
+    @staticmethod
     def create_yes_no() -> YesNoValidator:
         return YesNoValidator()
 
@@ -159,6 +178,10 @@ def validate_date(value: str) -> tuple[bool, str | None]:
 
 def validate_yes_no(value: str) -> tuple[bool, str | None]:
     return ValidatorFactory.create_yes_no().validate(value)
+
+
+def validate_group(value: str) -> tuple[bool, str | None]:
+    return ValidatorFactory.create_group().validate(value)
 
 
 def create_options_validator(options: list[str]) -> Callable[[str], tuple[bool, str | None]]:
