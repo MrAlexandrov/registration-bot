@@ -19,10 +19,10 @@ from src.survey.validators import (
     [
         ("01.01.2000", True),
         ("31.12.1999", True),
-        ("15.06.2023", True),
-        ("1.1.2020", True),
+        ("15.06.2007", True),
+        ("1.1.2008", True),
         ("2000-01-01", False),
-        ("32.12.2022", False),
+        ("32.12.2010", False),
         ("abc", False),
         ("", False),
     ],

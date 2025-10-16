@@ -100,7 +100,7 @@ class TestDateValidator:
 
     @pytest.mark.parametrize(
         "date",
-        ["01.01.2000", "31.12.1999", "15.06.2023", "1.1.2020", "29.02.2020"],  # високосный год
+        ["01.01.2000", "31.12.1999", "15.06.2008", "1.1.2008", "29.02.2008"],  # високосный год
     )
     def test_valid_dates(self, date):
         validator = DateValidator()
