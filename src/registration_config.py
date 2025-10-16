@@ -14,16 +14,17 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .survey.auto_collectors import auto_collect_first_name, auto_collect_full_name, auto_collect_username
+from .survey.auto_collectors import auto_collect_full_name, auto_collect_username
 from .survey.formatters import (
+    format_date_db,
     format_default_display,
     format_phone_db,
     format_phone_display,
     format_text_db,
     format_username_db,
-    format_username_display,
 )
 from .survey.validators import (
+    validate_date,
     validate_non_empty,
     validate_phone,
 )
@@ -109,14 +110,7 @@ class RegistrationSurveyConfig:
                 field_name="username",
                 label="Никнейм",
                 db_formatter=format_username_db,
-                display_formatter=format_username_display,
                 auto_collect=auto_collect_username,
-                hidden=True,
-            ),
-            SurveyField(
-                field_name="telegram_name",
-                label="Имя в телеге",
-                auto_collect=auto_collect_first_name,
                 hidden=True,
             ),
             SurveyField(
@@ -127,10 +121,19 @@ class RegistrationSurveyConfig:
             ),
             SurveyField(
                 field_name="name",
-                label="Имя",
+                label="ФИО",
                 message="Привет, я - бот для регистрации на Пионерский выезд 2025!\nДавай знакомиться, напиши ФИО (в формате Иванов Иван Иванович)",
                 validator=validate_non_empty,
                 db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                editable=True,
+            ),
+            SurveyField(
+                field_name="birth_date",
+                label="Дата рождения",
+                message="Когда у тебя день рождения?",
+                validator=validate_date,
+                db_formatter=format_date_db,
                 display_formatter=format_default_display,
                 editable=True,
             ),
@@ -151,6 +154,13 @@ class RegistrationSurveyConfig:
                 db_formatter=format_phone_db,
                 display_formatter=format_phone_display,
                 request_contact=True,
+                editable=True,
+            ),
+            SurveyField(
+                field_name="expectations",
+                label="Ожидания",
+                message="Какие у тебя ожидания от выезда?",
+                validator=validate_non_empty,
                 editable=True,
             ),
         ]
