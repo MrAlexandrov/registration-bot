@@ -1,4 +1,5 @@
 install:
+	sudo apt install pre-commit
 	poetry install
 
 run:
