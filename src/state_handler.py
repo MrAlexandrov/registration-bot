@@ -16,6 +16,7 @@ from telegram.ext import ContextTypes
 from src.user_storage import UserStorage
 
 from .constants import (
+    ADMIN_SEND_MESSAGE,
     AUTO_COLLECT,
     BUTTONS,
     CANCEL,
@@ -128,6 +129,10 @@ class StateHandler:
                         buttons.remove(GET_ACTUAL_TABLE)
             if state == EDIT:
                 buttons = [field.label for field in SURVEY_CONFIG.get_editable_fields()] + [CANCEL]
+            elif state == ADMIN_SEND_MESSAGE:
+                # For admin_send_message state, we want to show a cancel button as an inline keyboard
+                keyboard = [[InlineKeyboardButton(CANCEL, callback_data="cancel")]]
+                return InlineKeyboardMarkup(keyboard)
             return ReplyKeyboardMarkup([[button] for button in buttons], resize_keyboard=True, one_time_keyboard=True)
         # Для SurveyField используем атрибуты, для словарей - get
         elif (hasattr(config, "request_contact") and config.request_contact) or (

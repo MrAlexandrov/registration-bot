@@ -118,6 +118,255 @@ class MessageSender:
 
         return False
 
+    async def send_photo(
+        self,
+        bot: Bot,
+        chat_id: int,
+        photo: str,
+        caption: str | None = None,
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Безопасная отправка фото с обработкой ошибок и ретраями.
+
+        Args:
+            bot: Экземпляр Telegram Bot
+            chat_id: ID чата/пользователя
+            photo: File ID, URL или путь к фото
+            caption: Подпись к фото (опционально)
+            **kwargs: Дополнительные параметры для send_photo
+
+        Returns:
+            bool: True если фото отправлено успешно, False в противном случае
+        """
+        # Проверяем, не заблокирован ли бот пользователем
+        user = user_storage.get_user(chat_id)
+        if user and user.get("is_blocked"):
+            logger.info(f"Пользователь {chat_id} заблокировал бота, пропускаем отправку")
+            return False
+
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                sent_message = await bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, **kwargs)
+                logger.debug(f"Фото успешно отправлено пользователю {chat_id}")
+
+                # Log outgoing message
+                message_logger.log_outgoing_message(
+                    telegram_id=chat_id,
+                    chat_id=chat_id,
+                    sent_message=sent_message,
+                    message_type="photo",
+                    reply_to_message_id=kwargs.get("reply_to_message_id"),
+                )
+
+                return True
+
+            except Forbidden as e:
+                # Пользователь заблокировал бота
+                logger.warning(f"Пользователь {chat_id} заблокировал бота: {e}")
+                self._mark_user_as_blocked(chat_id)
+                return False
+
+            except RetryAfter as e:
+                # Rate limiting от Telegram
+                retry_after = e.retry_after
+                logger.warning(f"Rate limit для {chat_id}, ожидание {retry_after} секунд")
+                await asyncio.sleep(retry_after)
+                # Не считаем это попыткой, просто ждём и пробуем снова
+                continue
+
+            except NetworkError as e:
+                # Сетевая ошибка - пробуем ещё раз
+                if attempt < self.max_retries:
+                    delay = self.retry_delay * (2 ** (attempt - 1))  # Exponential backoff
+                    logger.warning(
+                        f"Сетевая ошибка при отправке фото {chat_id} "
+                        f"(попытка {attempt}/{self.max_retries}): {e}. "
+                        f"Повтор через {delay} сек."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Не удалось отправить фото {chat_id} после {self.max_retries} попыток: {e}")
+                    return False
+
+            except TelegramError as e:
+                # Другие ошибки Telegram API
+                logger.error(f"Ошибка Telegram API при отправке фото {chat_id}: {e}")
+                return False
+
+            except Exception as e:
+                # Неожиданная ошибка
+                logger.error(f"Неожиданная ошибка при отправке фото {chat_id}: {e}", exc_info=True)
+                return False
+
+        return False
+
+    async def send_video(
+        self,
+        bot: Bot,
+        chat_id: int,
+        video: str,
+        caption: str | None = None,
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Безопасная отправка видео с обработкой ошибок и ретраями.
+
+        Args:
+            bot: Экземпляр Telegram Bot
+            chat_id: ID чата/пользователя
+            video: File ID, URL или путь к видео
+            caption: Подпись к видео (опционально)
+            **kwargs: Дополнительные параметры для send_video
+
+        Returns:
+            bool: True если видео отправлено успешно, False в противном случае
+        """
+        # Проверяем, не заблокирован ли бот пользователем
+        user = user_storage.get_user(chat_id)
+        if user and user.get("is_blocked"):
+            logger.info(f"Пользователь {chat_id} заблокировал бота, пропускаем отправку")
+            return False
+
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                sent_message = await bot.send_video(chat_id=chat_id, video=video, caption=caption, **kwargs)
+                logger.debug(f"Видео успешно отправлено пользователю {chat_id}")
+
+                # Log outgoing message
+                message_logger.log_outgoing_message(
+                    telegram_id=chat_id,
+                    chat_id=chat_id,
+                    sent_message=sent_message,
+                    message_type="video",
+                    reply_to_message_id=kwargs.get("reply_to_message_id"),
+                )
+
+                return True
+
+            except Forbidden as e:
+                # Пользователь заблокировал бота
+                logger.warning(f"Пользователь {chat_id} заблокировал бота: {e}")
+                self._mark_user_as_blocked(chat_id)
+                return False
+
+            except RetryAfter as e:
+                # Rate limiting от Telegram
+                retry_after = e.retry_after
+                logger.warning(f"Rate limit для {chat_id}, ожидание {retry_after} секунд")
+                await asyncio.sleep(retry_after)
+                # Не считаем это попыткой, просто ждём и пробуем снова
+                continue
+
+            except NetworkError as e:
+                # Сетевая ошибка - пробуем ещё раз
+                if attempt < self.max_retries:
+                    delay = self.retry_delay * (2 ** (attempt - 1))  # Exponential backoff
+                    logger.warning(
+                        f"Сетевая ошибка при отправке видео {chat_id} "
+                        f"(попытка {attempt}/{self.max_retries}): {e}. "
+                        f"Повтор через {delay} сек."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Не удалось отправить видео {chat_id} после {self.max_retries} попыток: {e}")
+                    return False
+
+            except TelegramError as e:
+                # Другие ошибки Telegram API
+                logger.error(f"Ошибка Telegram API при отправке видео {chat_id}: {e}")
+                return False
+
+            except Exception as e:
+                # Неожиданная ошибка
+                logger.error(f"Неожиданная ошибка при отправке видео {chat_id}: {e}", exc_info=True)
+                return False
+
+        return False
+
+    async def send_document(
+        self,
+        bot: Bot,
+        chat_id: int,
+        document: str,
+        caption: str | None = None,
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Безопасная отправка документа с обработкой ошибок и ретраями.
+
+        Args:
+            bot: Экземпляр Telegram Bot
+            chat_id: ID чата/пользователя
+            document: File ID, URL или путь к документу
+            caption: Подпись к документу (опционально)
+            **kwargs: Дополнительные параметры для send_document
+
+        Returns:
+            bool: True если документ отправлен успешно, False в противном случае
+        """
+        # Проверяем, не заблокирован ли бот пользователем
+        user = user_storage.get_user(chat_id)
+        if user and user.get("is_blocked"):
+            logger.info(f"Пользователь {chat_id} заблокировал бота, пропускаем отправку")
+            return False
+
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                sent_message = await bot.send_document(chat_id=chat_id, document=document, caption=caption, **kwargs)
+                logger.debug(f"Документ успешно отправлен пользователю {chat_id}")
+
+                # Log outgoing message
+                message_logger.log_outgoing_message(
+                    telegram_id=chat_id,
+                    chat_id=chat_id,
+                    sent_message=sent_message,
+                    message_type="document",
+                    reply_to_message_id=kwargs.get("reply_to_message_id"),
+                )
+
+                return True
+
+            except Forbidden as e:
+                # Пользователь заблокировал бота
+                logger.warning(f"Пользователь {chat_id} заблокировал бота: {e}")
+                self._mark_user_as_blocked(chat_id)
+                return False
+
+            except RetryAfter as e:
+                # Rate limiting от Telegram
+                retry_after = e.retry_after
+                logger.warning(f"Rate limit для {chat_id}, ожидание {retry_after} секунд")
+                await asyncio.sleep(retry_after)
+                # Не считаем это попыткой, просто ждём и пробуем снова
+                continue
+
+            except NetworkError as e:
+                # Сетевая ошибка - пробуем ещё раз
+                if attempt < self.max_retries:
+                    delay = self.retry_delay * (2 ** (attempt - 1))  # Exponential backoff
+                    logger.warning(
+                        f"Сетевая ошибка при отправке документа {chat_id} "
+                        f"(попытка {attempt}/{self.max_retries}): {e}. "
+                        f"Повтор через {delay} сек."
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Не удалось отправить документ {chat_id} после {self.max_retries} попыток: {e}")
+                    return False
+
+            except TelegramError as e:
+                # Другие ошибки Telegram API
+                logger.error(f"Ошибка Telegram API при отправке документа {chat_id}: {e}")
+                return False
+
+            except Exception as e:
+                # Неожиданная ошибка
+                logger.error(f"Неожиданная ошибка при отправке документа {chat_id}: {e}", exc_info=True)
+                return False
+
+        return False
+
     def _mark_user_as_blocked(self, user_id: int) -> None:
         """
         Помечает пользователя как заблокировавшего бота.
@@ -137,6 +386,7 @@ class MessageSender:
         user_ids: list[int],
         text: str,
         delay_between: float = 0.05,
+        message_type: str = "text",
         **kwargs: Any,
     ) -> dict[str, int]:
         """
@@ -145,9 +395,10 @@ class MessageSender:
         Args:
             bot: Экземпляр Telegram Bot
             user_ids: Список ID пользователей
-            text: Текст сообщения
+            text: Текст сообщения (или caption для медиа)
             delay_between: Задержка между отправками в секундах (для избежания rate limit)
-            **kwargs: Дополнительные параметры для send_message
+            message_type: Тип сообщения ("text", "photo", "video", "document")
+            **kwargs: Дополнительные параметры для соответствующего метода отправки
 
         Returns:
             dict: Статистика отправки {"success": количество успешных, "failed": количество неудачных}
@@ -155,7 +406,40 @@ class MessageSender:
         stats = {"success": 0, "failed": 0}
 
         for user_id in user_ids:
-            success = await self.send_message(bot, user_id, text, **kwargs)
+            success = False
+            caption = text  # Для медиафайлов text становится caption
+
+            # Удаляем медиа-параметры из kwargs чтобы не передавать их в методы отправки
+            media_kwargs = kwargs.copy()
+            photo = media_kwargs.pop("photo", None)
+            video = media_kwargs.pop("video", None)
+            document = media_kwargs.pop("document", None)
+
+            if message_type == "text":
+                success = await self.send_message(bot, user_id, text, **kwargs)
+            elif message_type == "photo":
+                if photo is None:
+                    logger.error("Photo is required for sending photos")
+                    stats["failed"] += 1
+                    continue
+                success = await self.send_photo(bot, user_id, photo, caption, **media_kwargs)
+            elif message_type == "video":
+                if video is None:
+                    logger.error("Video is required for sending videos")
+                    stats["failed"] += 1
+                    continue
+                success = await self.send_video(bot, user_id, video, caption, **media_kwargs)
+            elif message_type == "document":
+                if document is None:
+                    logger.error("Document is required for sending documents")
+                    stats["failed"] += 1
+                    continue
+                success = await self.send_document(bot, user_id, document, caption, **media_kwargs)
+            else:
+                logger.error(f"Unsupported message type: {message_type}")
+                stats["failed"] += 1
+                continue
+
             if success:
                 stats["success"] += 1
             else:

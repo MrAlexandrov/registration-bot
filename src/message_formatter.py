@@ -97,7 +97,16 @@ class MessageFormatter:
 
         print(f"message = {message}")
 
-        if not message or not message.text:
+        if not message:
             return ""
 
-        return MessageFormatter._apply_entities_to_text(message.text, message.entities or [], parse_mode)
+        # For media messages, use caption instead of text
+        text = message.caption if hasattr(message, "caption") and message.caption else message.text
+        entities = (
+            message.caption_entities if hasattr(message, "caption_entities") and message.caption else message.entities
+        )
+
+        if not text:
+            return ""
+
+        return MessageFormatter._apply_entities_to_text(text, entities or [], parse_mode)

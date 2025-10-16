@@ -101,29 +101,88 @@ class RegistrationFlow:
         await self.process_data_input(update, context, state, user_input)
 
     async def handle_admin_input(self, update: Update, context: ContextTypes.DEFAULT_TYPE, state: str) -> bool:
-        user_id = update.message.from_user.id
+        user_id = update.effective_user.id
         if state == ADMIN_SEND_MESSAGE:
-            user_input = MessageFormatter.get_escaped_text(update.message)
-            if user_input == CANCEL:
+            # Handle cancel through callback query or text
+            if (update.message and update.message.text and update.message.text == CANCEL) or (
+                update.callback_query and update.callback_query.data == CANCEL
+            ):
+                if update.callback_query:
+                    await update.callback_query.answer()
                 await self.state_handler.transition_state(update, context, REGISTERED)
                 return True
+
+            # Detect content type and send accordingly
             all_users_id = self.user_storage.get_all_users()
             logger.info(f"Sending message to {len(all_users_id)} users")
 
-            # Используем массовую рассылку с автоматической обработкой блокировок
-            stats = await message_sender.send_message_to_multiple(
-                context.bot,
-                all_users_id,
-                user_input,
-                parse_mode=ParseMode.MARKDOWN_V2,
-            )
+            stats = None
+            if update.message.photo:
+                # Send photo
+                photo = update.message.photo[-1].file_id
+                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    all_users_id,
+                    caption,
+                    message_type="photo",
+                    photo=photo,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    f"Фото отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                )
+            elif update.message.video:
+                # Send video
+                video = update.message.video.file_id
+                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    all_users_id,
+                    caption,
+                    message_type="video",
+                    video=video,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    f"Видео отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                )
+            elif update.message.document:
+                # Send document
+                document = update.message.document.file_id
+                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    all_users_id,
+                    caption,
+                    message_type="document",
+                    document=document,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    f"Документ отправлен:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                )
+            else:
+                # Send text message
+                user_input = MessageFormatter.get_escaped_text(update.message)
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    all_users_id,
+                    user_input,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    f"Сообщение отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                )
 
-            await message_sender.send_message(
-                context.bot,
-                user_id,
-                f"Сообщение отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
-            )
-            logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            if stats:
+                logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
             await self.state_handler.transition_state(update, context, REGISTERED)
             return True
         return False
@@ -232,10 +291,28 @@ class RegistrationFlow:
 
         user_id = query.from_user.id
         user = self.user_storage.get_user(user_id)
-        state = user[STATE]
+        state = user[STATE] if user else None
+
+        # Handle cancel action first, as it doesn't need field config
+        if action == "cancel":
+            await self.clear_inline_keyboard(update)
+            await self.state_handler.transition_state(update, context, REGISTERED)
+            return
+
+        # For other actions, we need field config
+        if not state:
+            logger.warning("No state found for user %s", user_id)
+            return
+
         actual_field_name = state.replace("edit_", "")
         field_config = self.state_handler.get_config_by_state(actual_field_name)
-        is_multi_select = field_config.multi_select if field_config else False
+
+        # If no field config, we can't handle select or done actions
+        if not field_config:
+            logger.warning("No field config found for state %s", state)
+            return
+
+        is_multi_select = field_config.multi_select if hasattr(field_config, "multi_select") else False
         selected_options = user.get(actual_field_name, "").split(", ") if user.get(actual_field_name) else []
 
         if action == "select":
