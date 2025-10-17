@@ -50,4 +50,4 @@ docker-clean:
 	docker-compose down --rmi all --volumes --remove-orphans
 	docker system prune -f
 
-.PHONY: install run test test-cov test-cov-report lint format dump clean up down restart docker-clean
+.PHONY: install run test test-cov test-cov-report lint format dump clean up down restart logs docker-clean
