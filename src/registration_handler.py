@@ -37,7 +37,9 @@ from .messages import (
     GREETING_MESSAGE,
     INFO_ABOUT_TRIP,
     INFO_WHAT_TO_BRING,
+    OPTION_WILL_DRIVE_YES,
 )
+from .milestone_notifier import milestone_notifier
 from .permissions import permission_manager
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
@@ -413,6 +415,13 @@ class RegistrationFlow:
             # Отправляем сообщение-подтверждение для выбранных опций
             user_input = ", ".join(selected_options)
             await self._send_acknowledgment(context.bot, user_id, field_config, user_input)
+
+            # Проверяем, не достигнута ли веха регистрации (только для поля will_drive)
+            if actual_field_name == "will_drive" and user_input == OPTION_WILL_DRIVE_YES:
+                try:
+                    await milestone_notifier.check_and_notify(context.bot)
+                except Exception as e:
+                    logger.error(f"Ошибка при проверке вехи регистрации: {e}", exc_info=True)
 
             next_state = self.state_handler.get_next_state(state)
             await self.state_handler.transition_state(update, context, next_state)
