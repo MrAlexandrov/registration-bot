@@ -19,6 +19,21 @@ from .constants import (
 )
 from .message_formatter import MessageFormatter
 from .message_sender import message_sender
+from .messages import (
+    ADMIN_DOCUMENT_SENT_STATS,
+    ADMIN_FILE_SENT_ERROR,
+    ADMIN_FILE_SENT_SUCCESS,
+    ADMIN_MESSAGE_SENT_STATS,
+    ADMIN_PHOTO_SENT_STATS,
+    ADMIN_VIDEO_SENT_STATS,
+    ERROR_FIELD_NOT_EDITABLE,
+    ERROR_SELECT_SOMETHING,
+    ERROR_SOMETHING_WRONG,
+    ERROR_UNKNOWN_FIELD,
+    ERROR_USE_BUTTONS,
+    ERROR_USER_NOT_FOUND,
+    GREETING_MESSAGE,
+)
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
 from .user_storage import UserStorage, user_storage
@@ -45,7 +60,7 @@ class RegistrationFlow:
             await message_sender.send_message(
                 context.bot,
                 user_id,
-                "❤️‍🔥 Привет! Мы рады, что ты решил зарегистрироваться на Пионерский выезд 2025!",
+                GREETING_MESSAGE,
             )
             await self.state_handler.transition_state(update, context, self.steps[0])
         else:
@@ -66,7 +81,7 @@ class RegistrationFlow:
             await message_sender.send_message(
                 context.bot,
                 user_id,
-                "Извини, кажется, что-то пошло не так, и я не помню твоих данных, заполни, пожалуйста, их заново",
+                ERROR_USER_NOT_FOUND,
             )
             await self.handle_command(update, context)
             return
@@ -83,7 +98,7 @@ class RegistrationFlow:
             await message_sender.send_message(
                 context.bot,
                 user_id,
-                "Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                ERROR_SOMETHING_WRONG,
                 parse_mode=ParseMode.MARKDOWN,
             )
             return
@@ -94,7 +109,7 @@ class RegistrationFlow:
         )
         if has_options:
             logger.debug("User sent message while inline keyboard is active")
-            await message_sender.send_message(context.bot, user_id, "Пожалуйста, воспользуйся кнопками")
+            await message_sender.send_message(context.bot, user_id, ERROR_USE_BUTTONS)
             return
 
         user_input = update.message.contact.phone_number if update.message.contact else update.message.text
@@ -137,7 +152,7 @@ class RegistrationFlow:
                 await message_sender.send_message(
                     context.bot,
                     user_id,
-                    f"Фото отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                    ADMIN_PHOTO_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
                 )
             elif update.message.video:
                 # Send video
@@ -153,7 +168,7 @@ class RegistrationFlow:
                 await message_sender.send_message(
                     context.bot,
                     user_id,
-                    f"Видео отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                    ADMIN_VIDEO_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
                 )
             elif update.message.document:
                 # Send document
@@ -169,7 +184,7 @@ class RegistrationFlow:
                 await message_sender.send_message(
                     context.bot,
                     user_id,
-                    f"Документ отправлен:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                    ADMIN_DOCUMENT_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
                 )
             else:
                 # Send text message
@@ -184,7 +199,7 @@ class RegistrationFlow:
                 await message_sender.send_message(
                     context.bot,
                     user_id,
-                    f"Сообщение отправлено:\n✅ Успешно: {stats['success']}\n❌ Не удалось: {stats['failed']}",
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
                 )
 
             if stats:
@@ -209,10 +224,10 @@ class RegistrationFlow:
                 file_path = get_actual_table()
                 try:
                     await context.bot.send_document(chat_id=user_id, document=open(file_path, "rb"))
-                    await update.message.reply_text("Файл отправлен успешно!")
+                    await update.message.reply_text(ADMIN_FILE_SENT_SUCCESS)
                 except Exception as e:
                     logger.error(f"Failed to send file to user {user_id}: {e}")
-                    await update.message.reply_text(f"Не удалось отправить файл: {e}")
+                    await update.message.reply_text(ADMIN_FILE_SENT_ERROR.format(error=e))
         elif state == ADMIN_SEND_MESSAGE and user_input == CANCEL:
             await self.state_handler.transition_state(update, context, REGISTERED)
         elif state == EDIT:
@@ -227,12 +242,12 @@ class RegistrationFlow:
                 await message_sender.send_message(
                     context.bot,
                     user_id,
-                    "Я не знаю такого поля 😢\nВыбери, пожалуйста, другое, или отмени редактирование",
+                    ERROR_UNKNOWN_FIELD,
                 )
                 return
 
             if not field_config.editable:
-                await message_sender.send_message(context.bot, user_id, "Это поле нельзя редактировать.")
+                await message_sender.send_message(context.bot, user_id, ERROR_FIELD_NOT_EDITABLE)
                 return
 
             await self.state_handler.transition_state(update, context, f"edit_{field_config.field_name}")
@@ -257,7 +272,7 @@ class RegistrationFlow:
             await message_sender.send_message(
                 context.bot,
                 user_id,
-                "Что-то пошло не так 😢\nПопробуй перезапустить меня командой `/start` (все введённые данные я помню), если это не поможет, обратись, пожалуйста, к людям, отвечающим за регистрацию",
+                ERROR_SOMETHING_WRONG,
                 parse_mode=ParseMode.MARKDOWN,
             )
             return
@@ -274,8 +289,20 @@ class RegistrationFlow:
         formatted_db_value = self.apply_db_formatter(actual_state, user_input)
         self.user_storage.update_user(user_id, actual_state, formatted_db_value)
 
+        # Отправляем сообщение-подтверждение
+        await self._send_acknowledgment(context.bot, user_id, field_config, user_input)
+
         next_state = self.state_handler.get_next_state(state)
         await self.state_handler.transition_state(update, context, next_state)
+
+    async def _send_acknowledgment(self, bot, user_id: int, field_config, user_input: str) -> None:
+        """Отправляет сообщение-подтверждение в зависимости от конфигурации поля."""
+        # Приоритет 1: Специфичное сообщение для выбранного варианта (для полей с options)
+        if field_config.option_acknowledgments and user_input in field_config.option_acknowledgments:
+            await message_sender.send_message(bot, user_id, field_config.option_acknowledgments[user_input])
+        # Приоритет 2: Общее сообщение-подтверждение
+        elif field_config.acknowledgment_message:
+            await message_sender.send_message(bot, user_id, field_config.acknowledgment_message)
 
     def get_config_by_label(self, label: str) -> Any:
         """Возвращает конфигурацию поля по его label (используется в редактировании)."""
@@ -341,9 +368,14 @@ class RegistrationFlow:
 
         elif action == "done":
             if not selected_options:
-                await message_sender.send_message(context.bot, user_id, "Нужно что-то выбрать!")
+                await message_sender.send_message(context.bot, user_id, ERROR_SELECT_SOMETHING)
                 return
             await self.clear_inline_keyboard(update)
+
+            # Отправляем сообщение-подтверждение для выбранных опций
+            user_input = ", ".join(selected_options)
+            await self._send_acknowledgment(context.bot, user_id, field_config, user_input)
+
             next_state = self.state_handler.get_next_state(state)
             await self.state_handler.transition_state(update, context, next_state)
 

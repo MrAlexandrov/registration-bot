@@ -14,6 +14,31 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from .constants import ADMIN_SEND_MESSAGE, CANCEL, CHANGE_DATA, EDIT, REGISTERED
+from .messages import (
+    ACK_EXPECTATIONS,
+    ACK_NAME,
+    ADMIN_SEND_MESSAGE_PROMPT,
+    DEFAULT_NOT_SPECIFIED,
+    EDIT_PROMPT,
+    LABEL_BIRTH_DATE,
+    LABEL_EXPECTATIONS,
+    LABEL_GROUP,
+    LABEL_NAME,
+    LABEL_PHONE,
+    LABEL_TELEGRAM_FULLNAME,
+    LABEL_USERNAME,
+    LABEL_WILL_DRIVE,
+    QUESTION_BIRTH_DATE,
+    QUESTION_EXPECTATIONS,
+    QUESTION_GROUP,
+    QUESTION_NAME,
+    QUESTION_PHONE,
+    QUESTION_WILL_DRIVE,
+    REGISTERED_MESSAGE_HEADER,
+    WILL_DRIVE_ACKNOWLEDGMENTS,
+    WILL_DRIVE_OPTIONS,
+)
 from .survey.auto_collectors import auto_collect_full_name, auto_collect_username
 from .survey.formatters import (
     format_date_db,
@@ -31,23 +56,12 @@ from .survey.validators import (
     validate_phone,
 )
 
-# Константы для вариантов ответов
+# Константы для вариантов ответов (оставляем здесь, так как они специфичны для конфигурации)
 POSITIONS = ["Вожатый", "Подменка", "Физрук", "Кружковод", "Фотограф", "Радист", "Культорг"]
 AGES = ["6-9", "10-12", "12-14", "14-16"]
 PROBABILITIES = ["0-25", "25-50", "50-75", "75-100"]
 EDUCATION_OPTIONS = ["МГТУ им. Баумана", "Другое учебное заведение", "Закончил(а)", "Не учусь"]
 YES_NO = ["Да", "Нет"]
-
-# Константы для кнопок
-CHANGE_DATA = "Изменить данные"
-SEND_MESSAGE_ALL_USERS = "Отправить сообщение всем пользователям"
-GET_ACTUAL_TABLE = "Получить актуальную таблицу"
-DONE = "Готово"
-CANCEL = "Отмена"
-# Константы для состояний
-REGISTERED = "registered"
-EDIT = "edit"
-ADMIN_SEND_MESSAGE = "admin_send_message"
 
 
 @dataclass
@@ -92,6 +106,10 @@ class SurveyField:
     # Настройки отображения
     hidden: bool = False  # Скрыть поле от отображения пользователю
 
+    # Сообщения после ввода
+    acknowledgment_message: str | None = None  # Сообщение после успешного ввода данных
+    option_acknowledgments: dict[str, str] | None = None  # Сообщения для каждого варианта ответа
+
     # Тип поля в БД
     db_type: str = "TEXT"  # Тип поля в БД
 
@@ -109,33 +127,31 @@ class RegistrationSurveyConfig:
         return [
             SurveyField(
                 field_name="username",
-                label="Никнейм",
+                label=LABEL_USERNAME,
                 db_formatter=format_username_db,
                 auto_collect=auto_collect_username,
                 hidden=True,
             ),
             SurveyField(
                 field_name="telegram_sername",
-                label="Полное имя в телеге",
+                label=LABEL_TELEGRAM_FULLNAME,
                 auto_collect=auto_collect_full_name,
                 hidden=True,
             ),
             SurveyField(
                 field_name="name",
-                label="ФИО",
-                message="""Давай познакомимся? Для этого заполни мою анкету дружбы!
-‼️ Напиши своё ФИО!
-Например: Иванов Иван Иванович""",
+                label=LABEL_NAME,
+                message=QUESTION_NAME,
                 validator=validate_non_empty,
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
+                acknowledgment_message=ACK_NAME,
                 editable=True,
             ),
             SurveyField(
                 field_name="birth_date",
-                label="Дата рождения",
-                message="""🗓️ Теперь, свою дату рождения!
-Например: 07.07.2007""",
+                label=LABEL_BIRTH_DATE,
+                message=QUESTION_BIRTH_DATE,
                 validator=validate_date,
                 db_formatter=format_date_db,
                 display_formatter=format_default_display,
@@ -143,9 +159,8 @@ class RegistrationSurveyConfig:
             ),
             SurveyField(
                 field_name="group",
-                label="Группа",
-                message="""🎓 Напиши свою учебную группу!
-Например: РК6-56Б""",
+                label=LABEL_GROUP,
+                message=QUESTION_GROUP,
                 validator=validate_group,
                 db_formatter=format_group_db,
                 display_formatter=format_default_display,
@@ -153,9 +168,8 @@ class RegistrationSurveyConfig:
             ),
             SurveyField(
                 field_name="phone",
-                label="Номер телефона",
-                message="""📞 Введи свой номер телефона или поделись через телеграмм!
-Например: +7 8888888888""",
+                label=LABEL_PHONE,
+                message=QUESTION_PHONE,
                 validator=validate_phone,
                 db_formatter=format_phone_db,
                 display_formatter=format_phone_display,
@@ -164,9 +178,21 @@ class RegistrationSurveyConfig:
             ),
             SurveyField(
                 field_name="expectations",
-                label="Ожидания",
-                message="""🫶🏻 Расскажи свои ожидания от выезда!""",
+                label=LABEL_EXPECTATIONS,
+                message=QUESTION_EXPECTATIONS,
                 validator=validate_non_empty,
+                acknowledgment_message=ACK_EXPECTATIONS,
+                editable=True,
+            ),
+            SurveyField(
+                field_name="will_drive",
+                label=LABEL_WILL_DRIVE,
+                message=QUESTION_WILL_DRIVE,
+                options=WILL_DRIVE_OPTIONS,
+                multi_select=False,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                option_acknowledgments=WILL_DRIVE_ACKNOWLEDGMENTS,
                 editable=True,
             ),
         ]
@@ -177,7 +203,7 @@ class RegistrationSurveyConfig:
             {"state": REGISTERED, "message": self._generate_registered_message, "buttons": [CHANGE_DATA]},
             {
                 "state": EDIT,
-                "message": "Что хочешь изменить?",
+                "message": EDIT_PROMPT,
                 "buttons": lambda: [field.label for field in self.get_editable_fields()] + [CANCEL],
             },
         ]
@@ -187,21 +213,21 @@ class RegistrationSurveyConfig:
         return [
             {
                 "state": ADMIN_SEND_MESSAGE,
-                "message": "Отправь сообщение, которое хочешь отправить всем пользователям. Это может быть текст, фото, видео или документ.",
+                "message": ADMIN_SEND_MESSAGE_PROMPT,
                 "buttons": [CANCEL],
             }
         ]
 
     def _generate_registered_message(self, user_data: dict[str, Any]) -> str:
         """Генерирует сообщение с данными пользователя после регистрации."""
-        message = """❤️ Отлично! Всё заполнено, проверь нашу анкету дружбы, чтобы не было ошибок!\n"""
+        message = REGISTERED_MESSAGE_HEADER
 
         for field in self._fields:
             # Пропускаем скрытые поля
             if field.hidden:
                 continue
 
-            value = user_data.get(field.field_name, "Не указано")
+            value = user_data.get(field.field_name, DEFAULT_NOT_SPECIFIED)
             if field.display_formatter:
                 value = field.display_formatter(value)
             message += f"{field.label}: `{value}`\n"
