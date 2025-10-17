@@ -6,6 +6,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from .constants import (
+    ABOUT_TRIP,
     ADMIN_SEND_MESSAGE,
     BUTTONS,
     CANCEL,
@@ -16,6 +17,7 @@ from .constants import (
     REGISTERED,
     SEND_MESSAGE_ALL_USERS,
     STATE,
+    WHAT_TO_BRING,
 )
 from .message_formatter import MessageFormatter
 from .message_sender import message_sender
@@ -33,6 +35,8 @@ from .messages import (
     ERROR_USE_BUTTONS,
     ERROR_USER_NOT_FOUND,
     GREETING_MESSAGE,
+    INFO_ABOUT_TRIP,
+    INFO_WHAT_TO_BRING,
 )
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
@@ -218,6 +222,22 @@ class RegistrationFlow:
             if user_input == CHANGE_DATA:
                 logger.info(f"User {user_id} chose 'Change data'")
                 await self.state_handler.transition_state(update, context, EDIT)
+            elif user_input == ABOUT_TRIP:
+                logger.info(f"User {user_id} requested info about trip")
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    INFO_ABOUT_TRIP,
+                    parse_mode=ParseMode.MARKDOWN,
+                )
+            elif user_input == WHAT_TO_BRING:
+                logger.info(f"User {user_id} requested info about what to bring")
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    INFO_WHAT_TO_BRING,
+                    parse_mode=ParseMode.MARKDOWN,
+                )
             elif user_id in ADMIN_IDS and user_input == SEND_MESSAGE_ALL_USERS:
                 await self.state_handler.transition_state(update, context, ADMIN_SEND_MESSAGE)
             elif user_id in TABLE_GETTERS and user_input == GET_ACTUAL_TABLE:

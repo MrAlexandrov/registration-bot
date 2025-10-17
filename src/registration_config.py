@@ -14,7 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .constants import ADMIN_SEND_MESSAGE, CANCEL, CHANGE_DATA, EDIT, REGISTERED
+from .constants import ABOUT_TRIP, ADMIN_SEND_MESSAGE, CANCEL, CHANGE_DATA, EDIT, REGISTERED, WHAT_TO_BRING
 from .messages import (
     ACK_EXPECTATIONS,
     ACK_NAME,
@@ -200,7 +200,11 @@ class RegistrationSurveyConfig:
     def _create_post_registration_states(self) -> list[dict[str, Any]]:
         """Создает состояния после регистрации."""
         return [
-            {"state": REGISTERED, "message": self._generate_registered_message, "buttons": [CHANGE_DATA]},
+            {
+                "state": REGISTERED,
+                "message": self._generate_registered_message,
+                "buttons": [ABOUT_TRIP, WHAT_TO_BRING, CHANGE_DATA],
+            },
             {
                 "state": EDIT,
                 "message": EDIT_PROMPT,
