@@ -91,7 +91,7 @@ class SurveyField:
     validator: Callable[[str], tuple[bool, str | None]] | None = None  # Как валидировать
 
     # Форматирование
-    db_formatter: Callable[[str], str] | None = None  # Как обработать для БД
+    db_formatter: Callable[[str], str | None] | None = None  # Как обработать для БД
     display_formatter: Callable[[str], str] | None = None  # Как обработать для вывода
 
     # Варианты ответов
