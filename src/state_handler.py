@@ -75,11 +75,10 @@ class StateHandler:
         auto_collect = config.auto_collect if hasattr(config, "auto_collect") else config.get(AUTO_COLLECT)
         if auto_collect:
             value = auto_collect(update)
-            if value:
-                self.user_storage.update_user(user_id, actual_field_name, value)
-                next_state = self.get_next_state(state)
-                await self.transition_state(update, context, next_state)
-                return
+            self.user_storage.update_user(user_id, actual_field_name, value)
+            next_state = self.get_next_state(state)
+            await self.transition_state(update, context, next_state)
+            return
 
         # Для SurveyField используем атрибуты, для словарей - ключи
         skip_if = config.skip_if if hasattr(config, "skip_if") else config.get(SKIP_IF)
