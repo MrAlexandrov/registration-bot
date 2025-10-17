@@ -79,7 +79,7 @@ async def test_start_command(registration_flow, mock_user, mock_chat, mock_conte
 
     user = registration_flow.user_storage.get_user(mock_user.id)
     assert user is not None
-    assert user["state"] == "username"
+    assert user["state"] == "name"
     # Now two messages are sent: greeting message and name collection message
     assert mock_context.bot.send_message.call_count == 2
 
