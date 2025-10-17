@@ -38,8 +38,10 @@ from .messages import (
     INFO_ABOUT_TRIP,
     INFO_WHAT_TO_BRING,
 )
+from .permissions import permission_manager
 from .settings import ADMIN_IDS, SURVEY_CONFIG, TABLE_GETTERS
 from .state_handler import StateHandler
+from .survey.auto_collectors import auto_collect_counselor_status, auto_collect_staff_status
 from .user_storage import UserStorage, user_storage
 from .utils import get_actual_table
 
@@ -60,6 +62,22 @@ class RegistrationFlow:
         if not user:
             logger.info(f"Creating new user for user_id: {user_id}")
             self.user_storage.create_user(user_id)
+
+            # Автоматически собираем is_staff и is_counselor при создании пользователя
+            try:
+                is_staff = await auto_collect_staff_status(update, permission_manager, context)
+                is_counselor = await auto_collect_counselor_status(update, permission_manager, context)
+
+                if is_staff:
+                    self.user_storage.update_user(user_id, "is_staff", is_staff)
+                    logger.info(f"Auto-collected is_staff={is_staff} for new user {user_id}")
+
+                if is_counselor:
+                    self.user_storage.update_user(user_id, "is_counselor", is_counselor)
+                    logger.info(f"Auto-collected is_counselor={is_counselor} for new user {user_id}")
+            except Exception as e:
+                logger.warning(f"Failed to auto-collect staff/counselor status for user {user_id}: {e}")
+
             # Send greeting message for new users
             await message_sender.send_message(
                 context.bot,

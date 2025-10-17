@@ -39,7 +39,10 @@ from .messages import (
     WILL_DRIVE_ACKNOWLEDGMENTS,
     WILL_DRIVE_OPTIONS,
 )
-from .survey.auto_collectors import auto_collect_full_name, auto_collect_username
+from .survey.auto_collectors import (
+    auto_collect_full_name,
+    auto_collect_username,
+)
 from .survey.formatters import (
     format_date_db,
     format_default_display,
