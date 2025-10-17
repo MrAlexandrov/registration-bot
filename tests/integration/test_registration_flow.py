@@ -96,6 +96,7 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
         "phone": "71234567890",
         "birth_date": "10.03.2002",
         "expectations": "The best",
+        "will_drive": "Да",
         # "username": "testuser",
         # "email": "test@example.com",
         # "position": "Вожатый",
@@ -120,32 +121,33 @@ async def test_registration_flow(registration_flow, mock_user, mock_chat, mock_c
         mock_update.callback_query = None
 
         # For fields with options, we need to simulate an inline query
-        # if field in [
-        #     "position",
-        #     "desired_age",
-        #     "probability_instructive",
-        #     "probability_first",
-        #     "probability_second",
-        #     "education_choice",
-        #     "work",
-        #     "diplom",
-        #     "rescheduling_session",
-        #     "rescheduling_practice",
-        #     "medical_book",
-        # ]:
-        #     # Step 1: Select an option
-        #     mock_update.callback_query = AsyncMock()
-        #     mock_update.callback_query.data = f"select|{value}"
-        #     mock_update.callback_query.from_user = mock_user
-        #     mock_update.callback_query.message = create_mock_message(mock_chat, mock_user, text=value)
-        #     await registration_flow.handle_inline_query(mock_update, mock_context)
+        if field in [
+            "will_drive"
+            #     "position",
+            #     "desired_age",
+            #     "probability_instructive",
+            #     "probability_first",
+            #     "probability_second",
+            #     "education_choice",
+            #     "work",
+            #     "diplom",
+            #     "rescheduling_session",
+            #     "rescheduling_practice",
+            #     "medical_book",
+        ]:
+            # Step 1: Select an option
+            mock_update.callback_query = AsyncMock()
+            mock_update.callback_query.data = f"select|{value}"
+            mock_update.callback_query.from_user = mock_user
+            mock_update.callback_query.message = create_mock_message(mock_chat, mock_user, text=value)
+            await registration_flow.handle_inline_query(mock_update, mock_context)
 
-        #     # Step 2: Click "Done"
-        #     mock_update.callback_query.data = "done"
-        #     await registration_flow.handle_inline_query(mock_update, mock_context)
-        # else:
-        mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
-        await registration_flow.handle_input(mock_update, mock_context)
+            # Step 2: Click "Done"
+            mock_update.callback_query.data = "done"
+            await registration_flow.handle_inline_query(mock_update, mock_context)
+        else:
+            mock_update.message = create_mock_message(mock_chat, mock_user, text=value)
+            await registration_flow.handle_input(mock_update, mock_context)
 
         assert registration_flow.user_storage.get_user(user_id)[field] == value
 
