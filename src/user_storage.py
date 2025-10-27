@@ -187,7 +187,11 @@ class UserStorage:
     def get_amount_of_users(self) -> int:
         with db.get_session() as session:
             users = (
-                session.query(self.User.telegram_id).filter_by(will_drive="Обязательно! 🤩").filter_by(is_staff=0).all()
+                session.query(self.User.telegram_id)
+                .filter_by(will_drive="Обязательно! 🤩")
+                .filter_by(is_staff=0)
+                .filter_by(is_blocked=0)
+                .all()
             )
             return len(users)
 

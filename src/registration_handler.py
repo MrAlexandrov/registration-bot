@@ -8,6 +8,7 @@ from telegram.ext import ContextTypes
 from .constants import (
     ABOUT_TRIP,
     ADMIN_SEND_MESSAGE,
+    AMOUNT_OF_USERS,
     BUTTONS,
     CANCEL,
     CHANGE_DATA,
@@ -332,6 +333,13 @@ class RegistrationFlow:
                 )
                 if stats:
                     logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            elif user_id in ADMIN_IDS and user_input == AMOUNT_OF_USERS:
+                amount_of_users = self.user_storage.get_amount_of_users()
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    str(amount_of_users),
+                )
             elif user_id in TABLE_GETTERS and user_input == GET_ACTUAL_TABLE:
                 file_path = get_actual_table()
                 try:
