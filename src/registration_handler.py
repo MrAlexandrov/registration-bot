@@ -276,7 +276,7 @@ class RegistrationFlow:
                     will_drive_users,
                     NOTIFY_WILL_DRIVE,
                     message_type="text",
-                    parse_mode=ParseMode.MARKDOWN_V2,
+                    parse_mode=ParseMode.MARKDOWN,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -292,7 +292,7 @@ class RegistrationFlow:
                     previous_year_users,
                     NOTIFY_PREVIOUS_YEAR,
                     message_type="text",
-                    parse_mode=ParseMode.MARKDOWN_V2,
+                    parse_mode=ParseMode.MARKDOWN,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -308,7 +308,7 @@ class RegistrationFlow:
                     did_not_finished_users,
                     NOTIFY_DID_NOT_FINISHED,
                     message_type="text",
-                    parse_mode=ParseMode.MARKDOWN_V2,
+                    parse_mode=ParseMode.MARKDOWN,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -324,7 +324,7 @@ class RegistrationFlow:
                     dont_know_users,
                     NOTIFY_DONT_KNOW,
                     message_type="text",
-                    parse_mode=ParseMode.MARKDOWN_V2,
+                    parse_mode=ParseMode.MARKDOWN,
                 )
                 await message_sender.send_message(
                     context.bot,
