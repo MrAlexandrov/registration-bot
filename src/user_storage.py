@@ -184,6 +184,13 @@ class UserStorage:
             users = session.query(self.User).filter_by(state=state).order_by(self.User.created_at).all()
             return [user.to_dict() for user in users]
 
+    def get_amount_of_users(self) -> int:
+        with db.get_session() as session:
+            users = (
+                session.query(self.User.telegram_id).filter_by(will_drive="Обязательно! 🤩").filter_by(is_staff=0).all()
+            )
+            return len(users)
+
     def get_will_drive(self) -> list[int]:
         with db.get_session() as session:
             users = session.query(self.User.telegram_id).filter_by(will_drive="Обязательно! 🤩").all()

@@ -17,6 +17,7 @@ from src.user_storage import UserStorage
 
 from .constants import (
     ADMIN_SEND_MESSAGE,
+    AMOUNT_OF_USERS,
     AUTO_COLLECT,
     BUTTONS,
     CANCEL,
@@ -135,6 +136,8 @@ class StateHandler:
                         buttons.append(SEND_DID_NOT_FINISHED)
                     if user_id in ADMIN_IDS and SEND_DONT_KNOW not in buttons:
                         buttons.append(SEND_DONT_KNOW)
+                    if user_id in ADMIN_IDS and AMOUNT_OF_USERS not in buttons:
+                        buttons.append(AMOUNT_OF_USERS)
                     if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
                         buttons.append(GET_ACTUAL_TABLE)
                 else:
