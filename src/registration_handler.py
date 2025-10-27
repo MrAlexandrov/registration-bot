@@ -15,7 +15,11 @@ from .constants import (
     GET_ACTUAL_TABLE,
     OPTIONS,
     REGISTERED,
+    SEND_DID_NOT_FINISHED,
+    SEND_DONT_KNOW,
     SEND_MESSAGE_ALL_USERS,
+    SEND_PREVIOUS_YEAR,
+    SEND_WILL_DRIVE,
     STATE,
     WHAT_TO_BRING,
 )
@@ -37,6 +41,10 @@ from .messages import (
     GREETING_MESSAGE,
     INFO_ABOUT_TRIP,
     INFO_WHAT_TO_BRING,
+    NOTIFY_DID_NOT_FINISHED,
+    NOTIFY_DONT_KNOW,
+    NOTIFY_PREVIOUS_YEAR,
+    NOTIFY_WILL_DRIVE,
     OPTION_WILL_DRIVE_YES,
 )
 from .milestone_notifier import milestone_notifier
@@ -260,6 +268,70 @@ class RegistrationFlow:
                 )
             elif user_id in ADMIN_IDS and user_input == SEND_MESSAGE_ALL_USERS:
                 await self.state_handler.transition_state(update, context, ADMIN_SEND_MESSAGE)
+            elif user_id in ADMIN_IDS and user_input == SEND_WILL_DRIVE:
+                will_drive_users = self.user_storage.get_will_drive()
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    will_drive_users,
+                    NOTIFY_WILL_DRIVE,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
+                )
+                if stats:
+                    logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            elif user_id in ADMIN_IDS and user_input == SEND_PREVIOUS_YEAR:
+                previous_year_users = self.user_storage.get_previous_year()
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    previous_year_users,
+                    NOTIFY_PREVIOUS_YEAR,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
+                )
+                if stats:
+                    logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            elif user_id in ADMIN_IDS and user_input == SEND_DID_NOT_FINISHED:
+                did_not_finished_users = self.user_storage.get_did_not_finished()
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    did_not_finished_users,
+                    NOTIFY_DID_NOT_FINISHED,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
+                )
+                if stats:
+                    logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            elif user_id in ADMIN_IDS and user_input == SEND_DONT_KNOW:
+                dont_know_users = self.user_storage.get_dont_know()
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    dont_know_users,
+                    NOTIFY_DONT_KNOW,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN_V2,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
+                )
+                if stats:
+                    logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
             elif user_id in TABLE_GETTERS and user_input == GET_ACTUAL_TABLE:
                 file_path = get_actual_table()
                 try:

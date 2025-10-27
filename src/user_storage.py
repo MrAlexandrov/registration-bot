@@ -184,6 +184,26 @@ class UserStorage:
             users = session.query(self.User).filter_by(state=state).order_by(self.User.created_at).all()
             return [user.to_dict() for user in users]
 
+    def get_will_drive(self) -> list[int]:
+        with db.get_session() as session:
+            users = session.query(self.User.telegram_id).filter_by(will_drive="Обязательно! 🤩").all()
+            return [user[0] for user in users]
+
+    def get_previous_year(self) -> list[int]:
+        with db.get_session() as session:
+            users = session.query(self.User.telegram_id).filter_by(will_drive="Жду ответа по этому году ❗").all()
+            return [user[0] for user in users]
+
+    def get_did_not_finished(self) -> list[int]:
+        with db.get_session() as session:
+            users = session.query(self.User.telegram_id).filter_by(will_drive=None).all()
+            return [user[0] for user in users]
+
+    def get_dont_know(self) -> list[int]:
+        with db.get_session() as session:
+            users = session.query(self.User.telegram_id).filter_by(will_drive="Пока думаю 🤔")
+            return [user[0] for user in users]
+
 
 # Create global instance for backward compatibility
 user_storage = UserStorage()
