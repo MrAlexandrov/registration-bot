@@ -190,7 +190,7 @@ class UserStorage:
         with db.get_session() as session:
             users = (
                 session.query(self.User.telegram_id)
-                .filter_by(will_drive=TRIP_POLL_YES)
+                .filter_by(trip_attendance=TRIP_POLL_YES)
                 .filter_by(is_staff=0)
                 .filter_by(is_blocked=0)
                 .all()
