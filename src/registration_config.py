@@ -36,6 +36,9 @@ from .messages import (
     QUESTION_PHONE,
     QUESTION_WILL_DRIVE,
     REGISTERED_MESSAGE_HEADER,
+    TRIP_POLL_ACKNOWLEDGMENTS,
+    TRIP_POLL_MESSAGE,
+    TRIP_POLL_OPTIONS,
     WILL_DRIVE_ACKNOWLEDGMENTS,
     WILL_DRIVE_OPTIONS,
 )
@@ -196,6 +199,17 @@ class RegistrationSurveyConfig:
                 db_formatter=format_text_db,
                 display_formatter=format_default_display,
                 option_acknowledgments=WILL_DRIVE_ACKNOWLEDGMENTS,
+                editable=True,
+            ),
+            SurveyField(
+                field_name="trip_attendance",
+                label="Участие в выезде",
+                message=TRIP_POLL_MESSAGE,
+                options=TRIP_POLL_OPTIONS,
+                multi_select=False,
+                db_formatter=format_text_db,
+                display_formatter=format_default_display,
+                option_acknowledgments=TRIP_POLL_ACKNOWLEDGMENTS,
                 editable=True,
             ),
         ]

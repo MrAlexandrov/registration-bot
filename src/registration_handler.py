@@ -20,6 +20,7 @@ from .constants import (
     SEND_DONT_KNOW,
     SEND_MESSAGE_ALL_USERS,
     SEND_PREVIOUS_YEAR,
+    SEND_TRIP_POLL,
     SEND_WILL_DRIVE,
     STATE,
     WHAT_TO_BRING,
@@ -47,6 +48,10 @@ from .messages import (
     NOTIFY_PREVIOUS_YEAR,
     NOTIFY_WILL_DRIVE,
     OPTION_WILL_DRIVE_YES,
+    TRIP_POLL_ACK_NO,
+    TRIP_POLL_ACK_YES,
+    TRIP_POLL_MESSAGE,
+    TRIP_POLL_OPTIONS,
 )
 from .milestone_notifier import milestone_notifier
 from .permissions import permission_manager
@@ -333,6 +338,35 @@ class RegistrationFlow:
                 )
                 if stats:
                     logger.info(f"Message sent to users: success={stats['success']}, failed={stats['failed']}")
+            elif user_id in ADMIN_IDS and user_input == SEND_TRIP_POLL:
+                from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+                # Create inline keyboard with Yes/No buttons
+                keyboard = [
+                    [
+                        InlineKeyboardButton(TRIP_POLL_OPTIONS[0], callback_data=f"trip_poll|{TRIP_POLL_OPTIONS[0]}"),
+                        InlineKeyboardButton(TRIP_POLL_OPTIONS[1], callback_data=f"trip_poll|{TRIP_POLL_OPTIONS[1]}"),
+                    ]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
+                # all_users_id = self.user_storage.get_all_users()
+                all_users_id = [500261451]  # for testing
+                stats = await message_sender.send_message_to_multiple(
+                    context.bot,
+                    all_users_id,
+                    TRIP_POLL_MESSAGE,
+                    message_type="text",
+                    parse_mode=ParseMode.MARKDOWN,
+                    reply_markup=reply_markup,
+                )
+                await message_sender.send_message(
+                    context.bot,
+                    user_id,
+                    ADMIN_MESSAGE_SENT_STATS.format(success=stats["success"], failed=stats["failed"]),
+                )
+                if stats:
+                    logger.info(f"Trip poll sent to users: success={stats['success']}, failed={stats['failed']}")
             elif user_id in ADMIN_IDS and user_input == AMOUNT_OF_USERS:
                 amount_of_users = self.user_storage.get_amount_of_users()
                 await message_sender.send_message(
@@ -449,6 +483,24 @@ class RegistrationFlow:
         # Handle cancel actions first, as they don't need field config
         if action == "cancel" or action == "cancel_edit":
             await self.clear_inline_keyboard(update)
+            await self.state_handler.transition_state(update, context, REGISTERED)
+            return
+
+        # Special handling for trip poll (no state change)
+        if action == "trip_poll" and option:
+            await self.clear_inline_keyboard(update)
+
+            # Save the response to trip_attendance field
+            self.user_storage.update_user(user_id, "trip_attendance", option)
+            logger.info(f"User {user_id} responded to trip poll: {option}")
+
+            # Send acknowledgment based on the option
+            if option == TRIP_POLL_OPTIONS[0]:  # Yes option
+                await message_sender.send_message(context.bot, user_id, TRIP_POLL_ACK_YES)
+            elif option == TRIP_POLL_OPTIONS[1]:  # No option
+                await message_sender.send_message(context.bot, user_id, TRIP_POLL_ACK_NO)
+
+            # No state change - user stays in their current state
             await self.state_handler.transition_state(update, context, REGISTERED)
             return
 

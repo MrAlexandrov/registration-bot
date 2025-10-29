@@ -32,6 +32,7 @@ from .constants import (
     SEND_DONT_KNOW,
     SEND_MESSAGE_ALL_USERS,
     SEND_PREVIOUS_YEAR,
+    SEND_TRIP_POLL,
     SEND_WILL_DRIVE,
     SKIP_IF,
     STATE,
@@ -136,6 +137,8 @@ class StateHandler:
                         buttons.append(SEND_DID_NOT_FINISHED)
                     if user_id in ADMIN_IDS and SEND_DONT_KNOW not in buttons:
                         buttons.append(SEND_DONT_KNOW)
+                    if user_id in ADMIN_IDS and SEND_TRIP_POLL not in buttons:
+                        buttons.append(SEND_TRIP_POLL)
                     if user_id in ADMIN_IDS and AMOUNT_OF_USERS not in buttons:
                         buttons.append(AMOUNT_OF_USERS)
                     if user_id in TABLE_GETTERS and GET_ACTUAL_TABLE not in buttons:
