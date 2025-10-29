@@ -350,8 +350,7 @@ class RegistrationFlow:
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
-                # all_users_id = self.user_storage.get_all_users()
-                all_users_id = [500261451]  # for testing
+                all_users_id = self.user_storage.get_all_users()
                 stats = await message_sender.send_message_to_multiple(
                     context.bot,
                     all_users_id,
