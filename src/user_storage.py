@@ -8,6 +8,8 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
+from src.messages import TRIP_POLL_YES
+
 from .database import db
 from .models import get_user_model
 
@@ -188,7 +190,7 @@ class UserStorage:
         with db.get_session() as session:
             users = (
                 session.query(self.User.telegram_id)
-                .filter_by(will_drive="Обязательно! 🤩")
+                .filter_by(will_drive=TRIP_POLL_YES)
                 .filter_by(is_staff=0)
                 .filter_by(is_blocked=0)
                 .all()
