@@ -28,12 +28,8 @@ from .constants import (
     OPTIONS,
     REGISTERED,
     REQUEST_CONTACT,
-    SEND_DID_NOT_FINISHED,
-    SEND_DONT_KNOW,
     SEND_MESSAGE_ALL_USERS,
-    SEND_PREVIOUS_YEAR,
     SEND_TRIP_POLL,
-    SEND_WILL_DRIVE,
     SKIP_IF,
     STATE,
 )
@@ -129,14 +125,6 @@ class StateHandler:
                 if user_id in ADMIN_IDS or user_id in TABLE_GETTERS:
                     if user_id in ADMIN_IDS and SEND_MESSAGE_ALL_USERS not in buttons:
                         buttons.append(SEND_MESSAGE_ALL_USERS)
-                    if user_id in ADMIN_IDS and SEND_WILL_DRIVE not in buttons:
-                        buttons.append(SEND_WILL_DRIVE)
-                    if user_id in ADMIN_IDS and SEND_PREVIOUS_YEAR not in buttons:
-                        buttons.append(SEND_PREVIOUS_YEAR)
-                    if user_id in ADMIN_IDS and SEND_DID_NOT_FINISHED not in buttons:
-                        buttons.append(SEND_DID_NOT_FINISHED)
-                    if user_id in ADMIN_IDS and SEND_DONT_KNOW not in buttons:
-                        buttons.append(SEND_DONT_KNOW)
                     if user_id in ADMIN_IDS and SEND_TRIP_POLL not in buttons:
                         buttons.append(SEND_TRIP_POLL)
                     if user_id in ADMIN_IDS and AMOUNT_OF_USERS not in buttons:
