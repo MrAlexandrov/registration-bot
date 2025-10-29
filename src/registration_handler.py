@@ -168,16 +168,18 @@ class RegistrationFlow:
             logger.info(f"Sending message to {len(all_users_id)} users")
 
             stats = None
+            user_input = MessageFormatter.get_escaped_text(update.message)
             if update.message.photo:
                 # Send photo
                 photo = update.message.photo[-1].file_id
-                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                caption = user_input
                 stats = await message_sender.send_message_to_multiple(
                     context.bot,
                     all_users_id,
                     caption,
                     message_type="photo",
                     photo=photo,
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -187,13 +189,14 @@ class RegistrationFlow:
             elif update.message.video:
                 # Send video
                 video = update.message.video.file_id
-                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                caption = user_input
                 stats = await message_sender.send_message_to_multiple(
                     context.bot,
                     all_users_id,
                     caption,
                     message_type="video",
                     video=video,
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -203,13 +206,14 @@ class RegistrationFlow:
             elif update.message.document:
                 # Send document
                 document = update.message.document.file_id
-                caption = MessageFormatter.get_escaped_text(update.message, ParseMode.MARKDOWN_V2)
+                caption = user_input
                 stats = await message_sender.send_message_to_multiple(
                     context.bot,
                     all_users_id,
                     caption,
                     message_type="document",
                     document=document,
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
                 await message_sender.send_message(
                     context.bot,
@@ -218,7 +222,6 @@ class RegistrationFlow:
                 )
             else:
                 # Send text message
-                user_input = MessageFormatter.get_escaped_text(update.message)
                 stats = await message_sender.send_message_to_multiple(
                     context.bot,
                     all_users_id,
